@@ -1,5 +1,7 @@
 package studio.tivaroid.treemivo.ui
 
+import android.content.Intent
+import android.content.ActivityNotFoundException
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -15,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -32,6 +35,7 @@ fun SmartCollectionsDialog(
     files: List<FileRecord>,
     onDismiss: () -> Unit
 ) {
+    val context = LocalContext.current
     var mode by remember { mutableStateOf(CollectionMode.FOLDERS) }
     var selectedId by remember { mutableStateOf<String?>(null) }
     var preview by remember { mutableStateOf<FileRecord?>(null) }
@@ -179,9 +183,27 @@ fun SmartCollectionsDialog(
             onDismissRequest = { preview = null },
             title = { Text(file.name, maxLines = 2) },
             text = { FilePreview(file) },
-            confirmButton = {
+            dismissButton = {
                 TextButton(onClick = { preview = null }) {
                     Text(stringResource(R.string.close))
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    try {
+                        val intent = Intent(Intent.ACTION_VIEW).apply {
+                            setDataAndType(file.uri,
+                                file.mimeType.ifBlank { "application/octet-stream" })
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
+                        context.startActivity(Intent.createChooser(intent, null))
+                    } catch (_: ActivityNotFoundException) {
+                        // No installed app is registered for this file type.
+                    } catch (_: SecurityException) {
+                        // A source provider can revoke access after indexing.
+                    }
+                }) {
+                    Text(stringResource(R.string.open_file))
                 }
             }
         )
