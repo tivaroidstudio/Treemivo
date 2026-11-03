@@ -183,4 +183,6 @@
     <string name="changed_files_none">No changed tracked files found in the comparable scans.</string>
     <string name="changed_files_less">Show fewer</string>
     <string name="changed_files_more">Show more</string>
+    <string name="search_unclosed_quote">Close the quotation mark to finish this search.</string>
+    <string name="search_terms_limit">Use at most 30 search terms; remaining terms were ignored.</string>
 </resources>
