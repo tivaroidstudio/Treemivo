@@ -92,4 +92,25 @@
     <string name="pro_description">Débloquez 30 analyses et leurs comparaisons. Achat unique sur Google Play.</string>
     <string name="buy_pro">Débloquer Pro</string>
     <string name="restore_purchases">Restaurer l’achat</string>
+    <string name="cleanup_title">Smart Cleanup</string>
+    <string name="cleanup_explanation">Examinez les suggestions d’abord. Aucun fichier n’est supprimé automatiquement.</string>
+    <string name="cleanup_big_videos">Grandes vidéos</string>
+    <string name="cleanup_old_downloads">Anciens téléchargements</string>
+    <string name="cleanup_installers">Installateurs</string>
+    <string name="similar_photos">Photos similaires</string>
+    <string name="cleanup_pro_only">Disponible avec Pro.</string>
+    <string name="analyze_similar">Trouver des photos similaires</string>
+    <string name="similar_disclaimer">Des photos semblables ne sont pas forcément des doublons. Examinez chacune.</string>
+    <string name="cleanup_review_only">à examiner, économie non garantie</string>
+    <string name="clear_selection">Effacer la sélection</string>
+    <string name="cleanup_none">Aucun fichier dans cette catégorie.</string>
+    <string name="cleanup_trash_scope">La corbeille par lots est réservée aux médias indexés accessibles dès Android 11. Les autres documents sont examinés séparément.</string>
+    <string name="move_selected_to_trash">Mettre la sélection à la corbeille</string>
+    <string name="cleanup_confirm_batch">Vérifiez les fichiers avant la confirmation du système:</string>
+    <string name="export_pdf">Exporter le rapport PDF</string>
+    <string name="save_filter">Enregistrer le filtre</string>
+    <string name="filter_name">Nom du filtre</string>
+    <string name="history_chart_label">Évolution du stockage (source choisie)</string>
+    <string name="zoom_hint">Pincez pour zoomer, déplacez par glissement, touchez deux fois pour réinitialiser.</string>
+    <string name="filter_saved_hint">Les filtres enregistrés exigent Pro.</string>
 </resources>
