@@ -28,6 +28,7 @@ class StorageViewModel(app: Application) : AndroidViewModel(app) {
     private val mediaScanner = MediaScanner(app)
     private val historyStore = ScanHistory(app)
     private val filterStore = FilterPresets(app)
+    private val bookmarkStore = FolderBookmarks(app)
     private val photoAnalyzer = PhotoSimilarityAnalyzer(app.contentResolver)
     val billing = ProBilling(app)
     private var scanJob: Job? = null
@@ -47,6 +48,8 @@ class StorageViewModel(app: Application) : AndroidViewModel(app) {
     var report by mutableStateOf<StorageReport?>(null)
         private set
     var history by mutableStateOf(historyStore.entries())
+        private set
+    var folderBookmarks by mutableStateOf(bookmarkStore.load())
         private set
     var savedFilters by mutableStateOf(filterStore.load())
         private set
@@ -232,6 +235,28 @@ class StorageViewModel(app: Application) : AndroidViewModel(app) {
         scanGeneration++
         scanJob?.cancel()
         busy = false
+    }
+
+    fun isBookmarked(path: String): Boolean =
+        folderBookmarks.any { it.source == origin && it.path == path }
+
+    fun currentBookmarks(): List<FolderBookmark> {
+        val indexed = report?.folders?.map { it.relativePath }?.toSet() ?: emptySet()
+        return folderBookmarks.filter {
+            it.source == origin && it.path in indexed
+        }
+    }
+
+    fun toggleBookmark(path: String) {
+        if (path.isBlank()) return
+        if (report?.folders?.none { it.relativePath == path } != false) return
+        val item = FolderBookmark(origin, path)
+        folderBookmarks = if (item in folderBookmarks) {
+            folderBookmarks - item
+        } else {
+            (folderBookmarks + item).takeLast(24)
+        }
+        bookmarkStore.save(folderBookmarks)
     }
 
     fun saveFilter(preset: SavedFilter) {
