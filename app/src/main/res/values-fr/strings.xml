@@ -144,4 +144,18 @@
     <string name="share_file">Partager le fichier</string>
     <string name="filter_empty_only">Fichiers vides uniquement</string>
     <string name="filter_hidden_only">Fichiers cachés uniquement</string>
+    <string name="growth_title">Évolution du stockage</string>
+    <string name="growth_not_comparable">Effectuez deux analyses complètes de la même source autorisée pour comparer les changements.</string>
+    <string name="growth_file_difference">Variation du nombre de fichiers</string>
+    <string name="growth_days">jours entre les analyses</string>
+    <string name="growth_by_type">Variation par type de fichier</string>
+    <string name="growth_pro_note">Les détails par type de fichier sont réservés à Pro.</string>
+    <string name="growth_scope_note">Seuls les fichiers accessibles d\'une même source autorisée sont comparés. Une variation de taille ne permet pas d\'identifier les fichiers modifiés.</string>
+    <string name="cleanup_screenshots">Captures d’écran</string>
+    <string name="cleanup_backups">Fichiers de type sauvegarde</string>
+    <string name="cleanup_empty_files">Fichiers vides</string>
+    <string name="cleanup_restore_ignored">Réafficher les suggestions ignorées</string>
+    <string name="cleanup_ignore">Ignorer</string>
+    <string name="pane_resize">Redimensionner le panneau de détails</string>
+    <string name="pane_details">Détails</string>
 </resources>
