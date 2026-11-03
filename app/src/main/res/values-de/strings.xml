@@ -183,4 +183,6 @@
     <string name="changed_files_none">Keine Größenänderungen in vergleichbaren Scans gefunden.</string>
     <string name="changed_files_less">Weniger anzeigen</string>
     <string name="changed_files_more">Mehr anzeigen</string>
+    <string name="search_unclosed_quote">Schließen Sie das Anführungszeichen, um die Suche abzuschließen.</string>
+    <string name="search_terms_limit">Maximal 30 Suchbegriffe; weitere Begriffe wurden ignoriert.</string>
 </resources>
