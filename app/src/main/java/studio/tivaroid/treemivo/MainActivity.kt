@@ -270,7 +270,7 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         if (selectedFile != null) {
-                            FileDetailsCard(selectedFile!!, context, Modifier.fillMaxWidth()) {
+                            FileDetailsCard(selectedFile!!, context, Modifier.fillMaxWidth(), vm.billing.isPro) {
                                 confirmRemoval = selectedFile
                             }
                         }
@@ -341,7 +341,7 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
                             }
                             if (selectedFile != null) {
                                 item {
-                                    FileDetailsCard(selectedFile!!, context, Modifier.fillMaxWidth()) {
+                                    FileDetailsCard(selectedFile!!, context, Modifier.fillMaxWidth(), vm.billing.isPro) {
                                         confirmRemoval = selectedFile
                                     }
                                 }
@@ -422,7 +422,7 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
             onDismissRequest = { selectedFile = null },
             title = { Text(stringResource(R.string.file_details)) },
             text = {
-                FileDetailsCard(selectedFile!!, context, Modifier.fillMaxWidth()) {
+                FileDetailsCard(selectedFile!!, context, Modifier.fillMaxWidth(), vm.billing.isPro) {
                     confirmRemoval = selectedFile
                     selectedFile = null
                 }
@@ -663,7 +663,7 @@ private fun MapCard(files: List<FileRecord>, height: Dp, onSelect: (FileRecord) 
                     Text(stringResource(R.string.no_files), color = TreemivoMuted)
                 }
             }
-            Text(stringResource(R.string.tap_map_hint), color = TreemivoMuted, fontSize = 12.sp)
+            Text(stringResource(R.string.zoom_hint), color = TreemivoMuted, fontSize = 12.sp)
             if (files.size > 260) {
                 Text(stringResource(R.string.treemap_limit), color = TreemivoMuted, fontSize = 12.sp)
             }
@@ -674,6 +674,7 @@ private fun MapCard(files: List<FileRecord>, height: Dp, onSelect: (FileRecord) 
 @Composable
 private fun FileDetailsCard(
     file: FileRecord, context: Context, modifier: Modifier = Modifier,
+    isPro: Boolean = false,
     onDelete: () -> Unit = {}
 ) {
     Surface(modifier, shape = RoundedCornerShape(18.dp), color = TreemivoSurface) {
@@ -683,6 +684,9 @@ private fun FileDetailsCard(
             Text(stringResource(R.string.size) + ": " + formatBytes(file.sizeBytes), color = TreemivoMuted)
             Text(stringResource(R.string.path) + ": " + file.relativePath, color = TreemivoMuted, fontSize = 12.sp)
             FilePreview(file)
+            if (file.name.endsWith(".zip", ignoreCase = true) && isPro) {
+                ArchiveInspector(file)
+            }
             TextButton(onClick = { openDocument(context, file) }) {
                 Icon(Icons.Outlined.OpenInNew, null)
                 Spacer(Modifier.width(6.dp))
