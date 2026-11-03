@@ -12,6 +12,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
@@ -69,7 +70,13 @@ fun ArchiveInspector(file: FileRecord) {
     val context = LocalContext.current
     var requested by remember(file.uri) { mutableStateOf(false) }
     val result by produceState<Result<List<ZipEntryInfo>>?>(null, requested, file.uri) {
-        if (requested) value = runCatching { inspectZip(context, file) }
+        if (requested) value = try {
+            Result.success(inspectZip(context, file))
+        } catch (cancel: CancellationException) {
+            throw cancel
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         OutlinedButton(onClick = { requested = true }, enabled = result == null) {
@@ -82,7 +89,7 @@ fun ArchiveInspector(file: FileRecord) {
         if (entries != null) {
             Text(stringResource(R.string.zip_metadata_warning), color = TreemivoMuted)
             Text("${entries.size} " + stringResource(R.string.files_count).lowercase())
-            entries.take(20).forEach { item ->
+            entries.take(6).forEach { item ->
                 Text(item.name + " · " +
                     if (item.originalBytes >= 0) "${item.originalBytes} B"
                     else "?", color = Color.White, maxLines = 1)
