@@ -72,15 +72,16 @@ fun StorageGrowthPanel(growth: StorageGrowth?, isPro: Boolean) {
     }
 }
 
-private fun kindName(kind: FileKind): String = when (kind) {
-    FileKind.IMAGE -> "Images"
-    FileKind.VIDEO -> "Video"
-    FileKind.AUDIO -> "Audio"
-    FileKind.DOCUMENT -> "Documents"
-    FileKind.ARCHIVE -> "Archives"
-    FileKind.INSTALLER -> "Installers"
-    FileKind.OTHER -> "Other"
-}
+@Composable
+private fun kindName(kind: FileKind): String = stringResource(when (kind) {
+    FileKind.IMAGE -> R.string.category_images
+    FileKind.VIDEO -> R.string.category_videos
+    FileKind.AUDIO -> R.string.category_audio
+    FileKind.DOCUMENT -> R.string.category_documents
+    FileKind.ARCHIVE -> R.string.category_archives
+    FileKind.INSTALLER -> R.string.category_apps
+    FileKind.OTHER -> R.string.category_other
+})
 
 private fun prettySigned(bytes: Long): String {
     val positive = if (bytes == Long.MIN_VALUE) Long.MAX_VALUE else kotlin.math.abs(bytes)
