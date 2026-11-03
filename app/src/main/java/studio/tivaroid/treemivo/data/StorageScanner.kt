@@ -80,7 +80,8 @@ class StorageScanner(private val resolver: ContentResolver) {
                         val fileUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, id)
                         files.add(FileRecord(name, path, size, mime, fileUri,
                             if (cursor.isNull(modifiedColumn)) 0L else cursor.getLong(modifiedColumn),
-                            FileSource.SAF))
+                            FileSource.SAF,
+                            !cursor.isNull(sizeColumn)))
                         // Roll up each file into every ancestor, not just the immediate parent.
                         var parent = current.path
                         while (parent.isNotEmpty()) {
