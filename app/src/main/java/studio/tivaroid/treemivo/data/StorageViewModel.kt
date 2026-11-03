@@ -383,6 +383,15 @@ class StorageViewModel(app: Application) : AndroidViewModel(app) {
         return compareGrowth(previous, snapshot)
     }
 
+    fun changedLargeFiles(): List<TrackedFileChange> {
+        if (!billing.isPro || busy) return emptyList()
+        val current = report ?: return emptyList()
+        val snapshots = comparableSnapshots()
+        val latest = snapshots.firstOrNull() ?: return emptyList()
+        val previous = matchingPrevious(snapshots, latest) ?: return emptyList()
+        return historyStore.changedTrackedFiles(previous, current, currentScopeKey())
+    }
+
     fun clearHistory() {
         historyStore.clear()
         history = emptyList()
