@@ -10,7 +10,10 @@ data class SavedFilter(
     val maxSize: Long,
     val kind: FileKind?,
     val recentOnly: Boolean,
-    val sort: FileSort
+    val sort: FileSort,
+    val onlyEmpty: Boolean = false,
+    val onlyHidden: Boolean = false,
+    val extension: String? = null
 )
 
 /** Saved presets contain preferences only, never file names or file data. */
@@ -28,7 +31,10 @@ class FilterPresets(context: Context) {
                 kind = item.optString("kind").takeIf { it.isNotBlank() }
                     ?.let { FileKind.valueOf(it) },
                 recentOnly = item.getBoolean("recent"),
-                sort = FileSort.valueOf(item.getString("sort"))
+                sort = FileSort.valueOf(item.getString("sort")),
+                onlyEmpty = item.optBoolean("emptyOnly", false),
+                onlyHidden = item.optBoolean("hiddenOnly", false),
+                extension = item.optString("extension").ifBlank { null }
             )
         }
     }.getOrDefault(emptyList())
@@ -45,6 +51,9 @@ class FilterPresets(context: Context) {
                 put("kind", item.kind?.name ?: "")
                 put("recent", item.recentOnly)
                 put("sort", item.sort.name)
+                put("emptyOnly", item.onlyEmpty)
+                put("hiddenOnly", item.onlyHidden)
+                put("extension", item.extension ?: "")
             })
         }
         prefs.edit().putString("presets", arr.toString()).apply()
@@ -57,7 +66,8 @@ class FilterPresets(context: Context) {
             arr.put(JSONObject().apply {
                 put("name", it.name); put("min", it.minSize); put("max", it.maxSize)
                 put("kind", it.kind?.name ?: ""); put("recent", it.recentOnly)
-                put("sort", it.sort.name)
+                put("sort", it.sort.name); put("emptyOnly", it.onlyEmpty)
+                put("hiddenOnly", it.onlyHidden); put("extension", it.extension ?: "")
             })
         }
         prefs.edit().putString("presets", arr.toString()).apply()
