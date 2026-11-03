@@ -5,7 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
-import android.provider.Settings
+import android.provider.Settings as AndroidSettings
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -295,7 +295,7 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
                         TextButton(onClick = {
                             context.startActivity(
                                 Intent(
-                                    Settings.ACTION_APP_LOCALE_SETTINGS,
+                                    AndroidSettings.ACTION_APP_LOCALE_SETTINGS,
                                     Uri.parse("package:" + context.packageName)
                                 )
                             )
