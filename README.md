@@ -11,7 +11,7 @@ A fast, private visual storage explorer inspired by treemaps. The phone UI follo
 - Duplicate detection by **size and SHA-256 contents** on demand.
 - CSV export, tap a file to open it in another app.
 - Responsive layout: phone bottom navigation, desktop sidebar, two content panes.
-- Localized Android string resources: English, Polish, German, Spanish, French; language follows system or Android 13+ app language settings.
+- Localized Android string resources: English, Polish, German, Spanish, French; language follows system settings, with an in-app shortcut to Android 13+ per-app language preferences.
 - All analysis is **on-device**, with no internet permission, telemetry or account.
 
 ## Development

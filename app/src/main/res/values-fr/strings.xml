@@ -60,4 +60,7 @@
     <string name="privacy_details">Les données restent sur l\'appareil. Aucun compte, envoi, suivi ou autorisation réseau.</string>
     <string name="unknown_type">Inconnu</string>
     <string name="scan_partial">Résultat partiel</string>
+    <string name="app_language">Langue de l’application</string>
+    <string name="treemap_limit">La carte affiche les 260 fichiers les plus volumineux</string>
+    <string name="folder_access_note">L’accès est limité aux dossiers sélectionnés.</string>
 </resources>

@@ -60,4 +60,7 @@
     <string name="privacy_details">Alle Daten bleiben auf dem Gerät. Kein Konto, Upload, Tracking oder Netzwerkzugriff.</string>
     <string name="unknown_type">Unbekannt</string>
     <string name="scan_partial">Teilergebnis</string>
+    <string name="app_language">App-Sprache</string>
+    <string name="treemap_limit">Die Karte zeigt die 260 größten Dateien</string>
+    <string name="folder_access_note">Dateizugriff gilt nur für die ausgewählten Ordner.</string>
 </resources>

@@ -60,4 +60,7 @@
     <string name="privacy_details">Wszystkie dane zostają na urządzeniu. Bez konta, przesyłania danych, śledzenia i uprawnień sieciowych.</string>
     <string name="unknown_type">Nieznany</string>
     <string name="scan_partial">Wynik częściowy</string>
+    <string name="app_language">Język aplikacji</string>
+    <string name="treemap_limit">Mapa pokazuje 260 największych plików</string>
+    <string name="folder_access_note">Dostęp do plików obejmuje tylko wybrane foldery.</string>
 </resources>

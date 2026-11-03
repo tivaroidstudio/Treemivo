@@ -60,4 +60,7 @@
     <string name="privacy_details">Everything stays on your device. No account, uploads, tracking or network permission is required.</string>
     <string name="unknown_type">Unknown</string>
     <string name="scan_partial">Partial result</string>
+    <string name="app_language">App language</string>
+    <string name="treemap_limit">Map shows the 260 largest files</string>
+    <string name="folder_access_note">Storage access is granted only to folders you choose.</string>
 </resources>

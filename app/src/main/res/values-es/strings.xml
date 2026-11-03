@@ -60,4 +60,7 @@
     <string name="privacy_details">Los datos permanecen en el dispositivo. Sin cuenta, subidas, seguimiento ni permiso de red.</string>
     <string name="unknown_type">Desconocido</string>
     <string name="scan_partial">Resultado parcial</string>
+    <string name="app_language">Idioma de la app</string>
+    <string name="treemap_limit">El mapa muestra los 260 archivos más grandes</string>
+    <string name="folder_access_note">El acceso se limita a las carpetas seleccionadas.</string>
 </resources>

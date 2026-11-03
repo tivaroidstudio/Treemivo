@@ -3,6 +3,9 @@ package studio.tivaroid.treemivo
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -288,6 +291,18 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(stringResource(R.string.privacy_details))
                     Text(stringResource(R.string.scan_restricted_details))
+                    if (Build.VERSION.SDK_INT >= 33) {
+                        TextButton(onClick = {
+                            context.startActivity(
+                                Intent(
+                                    Settings.ACTION_APP_LOCALE_SETTINGS,
+                                    Uri.parse("package:" + context.packageName)
+                                )
+                            )
+                        }) {
+                            Text(stringResource(R.string.app_language))
+                        }
+                    }
                     Text("v0.1.0 · Tivaroid Studio", color = TreemivoMuted)
                 }
             },
@@ -449,6 +464,9 @@ private fun MapCard(files: List<FileRecord>, height: Dp, onSelect: (FileRecord) 
                 }
             }
             Text(stringResource(R.string.tap_map_hint), color = TreemivoMuted, fontSize = 12.sp)
+            if (files.size > 260) {
+                Text(stringResource(R.string.treemap_limit), color = TreemivoMuted, fontSize = 12.sp)
+            }
         }
     }
 }
