@@ -4,6 +4,8 @@ import android.Manifest
 import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Context
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -48,6 +50,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -109,6 +118,15 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
     var fileSort by rememberSaveable { mutableStateOf(FileSort.SIZE_DESC) }
     var last30Days by rememberSaveable { mutableStateOf(false) }
     var extensionFilter by rememberSaveable { mutableStateOf<String?>(null) }
+    val searchFocus = remember { FocusRequester() }
+    var searchFocusPending by remember { mutableStateOf(false) }
+    LaunchedEffect(section, searchFocusPending) {
+        if (searchFocusPending && section == Section.FOLDERS) {
+            withFrameNanos { }
+            runCatching { searchFocus.requestFocus() }
+            searchFocusPending = false
+        }
+    }
 
     val chooseTree = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) {
         if (it != null) vm.setTree(it)
@@ -125,6 +143,9 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
     val exportPdf = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/pdf")
     ) { if (it != null) vm.exportPdf(it) }
+    val exportJson = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { if (it != null) vm.exportJson(it) }
 
     LaunchedEffect(vm.report) {
         folderPath = ""
@@ -188,7 +209,29 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
         }
     }
 
-    BoxWithConstraints(Modifier.fillMaxSize()) {
+    BoxWithConstraints(
+        Modifier.fillMaxSize().onPreviewKeyEvent { event ->
+            if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+            when {
+                event.isCtrlPressed && event.key == Key.R -> {
+                    vm.refresh()
+                    true
+                }
+                event.isCtrlPressed && event.key == Key.F -> {
+                    section = Section.FOLDERS
+                    searchFocusPending = true
+                    true
+                }
+                event.key == Key.Escape -> {
+                    selectedFile = null
+                    cleanupOpen = false
+                    settingsOpen = false
+                    true
+                }
+                else -> false
+            }
+        }
+    ) {
         // This adapts to the current WINDOW size, not the phone model. DeX and
         // Android desktop windowing can resize the activity at runtime.
         val expanded = maxWidth >= 900.dp
@@ -302,7 +345,8 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 19.sp
                         )
-                        SearchBox(search, { search = it })
+                        SearchBox(search, { search = it },
+                            Modifier.focusRequester(searchFocus))
                         ContentForSection(
                             section = if (section == Section.MAP) Section.FOLDERS else section,
                             vm = vm,
@@ -401,7 +445,8 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
                         }
                     } else {
                         Column(Modifier.fillMaxSize()) {
-                            SearchBox(search, { search = it }, Modifier.padding(horizontal = 16.dp))
+                            SearchBox(search, { search = it },
+                                Modifier.padding(horizontal = 16.dp).focusRequester(searchFocus))
                             Spacer(Modifier.height(6.dp))
                             ContentForSection(
                                 section, vm, filteredFiles, folderPath, Modifier.fillMaxSize(),
@@ -495,6 +540,7 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
                     verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(stringResource(R.string.privacy_details))
                     Text(stringResource(R.string.scan_restricted_details))
+                    Text(stringResource(R.string.desktop_shortcuts), color = TreemivoMuted)
                     HorizontalDivider()
                     Text(stringResource(R.string.saved_folders), fontWeight = FontWeight.Bold)
                     vm.treeUris.forEach { uri ->
@@ -515,6 +561,12 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
                             exportPdf.launch("treemivo-report.pdf")
                         }) {
                             Text(stringResource(R.string.export_pdf))
+                        }
+                        OutlinedButton(onClick = {
+                            settingsOpen = false
+                            exportJson.launch("treemivo-report.json")
+                        }) {
+                            Text(stringResource(R.string.export_json))
                         }
                     }
                     Text(stringResource(
@@ -766,6 +818,19 @@ private fun FileDetailsCard(
             Text(file.name, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Text(stringResource(R.string.size) + ": " + formatBytes(file.sizeBytes), color = TreemivoMuted)
             Text(stringResource(R.string.path) + ": " + file.relativePath, color = TreemivoMuted, fontSize = 12.sp)
+            if (file.modifiedAtMillis > 0L) {
+                Text(stringResource(R.string.modified_date) + ": " +
+                    DateFormat.getDateTimeInstance().format(Date(file.modifiedAtMillis)),
+                    color = TreemivoMuted, fontSize = 12.sp)
+            }
+            Row {
+                TextButton(onClick = { copyFilePath(context, file) }) {
+                    Text(stringResource(R.string.copy_path))
+                }
+                TextButton(onClick = { shareDocument(context, file) }) {
+                    Text(stringResource(R.string.share_file))
+                }
+            }
             FilePreview(file)
             if (file.name.endsWith(".zip", ignoreCase = true) && isPro) {
                 ArchiveInspector(file)
@@ -1094,6 +1159,26 @@ private fun formatBytes(bytes: Long): String {
         index++
     }
     return String.format(Locale.getDefault(), "%.1f %s", value, units[index])
+}
+
+private fun copyFilePath(context: Context, file: FileRecord) {
+    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    clipboard.setPrimaryClip(
+        ClipData.newPlainText("Treemivo path", file.relativePath)
+    )
+}
+
+private fun shareDocument(context: Context, file: FileRecord) {
+    try {
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = file.mimeType.ifBlank { "application/octet-stream" }
+            putExtra(Intent.EXTRA_STREAM, file.uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(Intent.createChooser(intent, null))
+    } catch (_: Exception) {
+        // A provider may revoke read access while the UI still shows a stale scan.
+    }
 }
 
 private fun openDocument(context: Context, file: FileRecord) {
