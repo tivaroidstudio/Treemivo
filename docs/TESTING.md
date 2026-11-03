@@ -78,3 +78,22 @@ These scenarios belong to the planned final Android QA phase.
 11. Regression: default map, duplicate SHA-256, system trash, billing purchase restoration, PDF report, photo similarity and SAF permissions.
 
 Automated instrumented tests, emulator QA and full builds have **not** been executed for this development batch at the user's request.
+
+
+## Deferred v0.5 scenarios — not yet executed
+
+- [ ] Two complete MediaStore scans with unchanged permissions: display indexed-byte, file-count and file-type deltas.
+- [ ] MediaStore access reduced from full library to selected photos: old snapshot must NOT be compared.
+- [ ] Add/remove a SAF folder grant and rescan: old snapshot must NOT be compared as if same source.
+- [ ] Partial or incomplete scan must not drive growth or file-type delta conclusions.
+- [ ] Read legacy scan summaries that lack scope fingerprint or type breakdown without crash.
+- [ ] One scan only, two scans with the same timestamp, or multiple scopes mixed in history: no fabricated growth.
+- [ ] Smart Cleanup screenshot/backup/empty suggestions: only metadata-based review prompts and no auto-delete.
+- [ ] Unknown size from a SAF provider: never classify the file as confirmed empty.
+- [ ] Ignore a suggested item, rescan and reopen; it should remain hidden until restored or file metadata changes.
+- [ ] Restore ignored suggestions; ensure no filenames or raw URIs are saved in ignore preferences.
+- [ ] Test desktop resize via touch/mouse drag and on-screen +/− across 900–2000 dp, large fonts and rotation.
+- [ ] Ensure right panel scrolling does not prevent folder/list navigation, and narrow DeX windows revert to phone layout.
+- [ ] Retest all prior confirmation dialogs and system trash cancellation paths after adding review categories.
+
+These scenarios are queued for the user's final verification phase; no build or tests were run in this feature batch.
