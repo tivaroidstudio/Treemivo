@@ -110,6 +110,14 @@ class StorageViewModel(app: Application) : AndroidViewModel(app) {
 
     fun hasMediaAccess(): Boolean = mediaScanner.hasAccess()
 
+    private fun authorizedSources(mode: ScanOrigin, folders: List<Uri>): List<String> =
+        if (mode == ScanOrigin.MEDIA) mediaScanner.grantedPermissionNames()
+        else folders.map { it.toString() }
+
+    private fun currentScopeKey(): String =
+        historyStore.scopeKey(origin.name, authorizedSources(origin, treeUris))
+
+
     fun setTree(uri: Uri) {
         try {
             context.contentResolver.takePersistableUriPermission(
@@ -218,7 +226,10 @@ class StorageViewModel(app: Application) : AndroidViewModel(app) {
                 }
                 report = fresh
                 withContext(Dispatchers.IO) {
-                    historyStore.record(currentMode.name, fresh)
+                    historyStore.record(
+                        currentMode.name, fresh,
+                        authorizedSources(currentMode, currentTrees)
+                    )
                 }
                 history = historyStore.entries()
             } catch (cancel: CancellationException) {
@@ -329,7 +340,24 @@ class StorageViewModel(app: Application) : AndroidViewModel(app) {
     fun folderChanges(snapshot: ScanSnapshot): List<FolderChange> {
         val current = report ?: return emptyList()
         if (snapshot.source != origin.name) return emptyList()
-        return historyStore.compare(snapshot, current)
+        return historyStore.compare(snapshot, current, currentScopeKey())
+    }
+
+    fun latestGrowth(): StorageGrowth? {
+        val latest = history.firstOrNull {
+            it.source == origin.name && it.scopeKey == currentScopeKey() && !it.partial
+        } ?: return null
+        val previous = matchingPrevious(history, latest) ?: return null
+        return compareGrowth(previous, latest)
+    }
+
+    fun selectedGrowth(snapshot: ScanSnapshot): StorageGrowth? {
+        if (snapshot.source != origin.name ||
+            snapshot.scopeKey != currentScopeKey() ||
+            snapshot.partial
+        ) return null
+        val previous = matchingPrevious(history, snapshot) ?: return null
+        return compareGrowth(previous, snapshot)
     }
 
     fun clearHistory() {
