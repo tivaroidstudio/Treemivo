@@ -118,6 +118,8 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
     var fileSort by rememberSaveable { mutableStateOf(FileSort.SIZE_DESC) }
     var last30Days by rememberSaveable { mutableStateOf(false) }
     var extensionFilter by rememberSaveable { mutableStateOf<String?>(null) }
+    var onlyEmpty by rememberSaveable { mutableStateOf(false) }
+    var onlyHidden by rememberSaveable { mutableStateOf(false) }
     val searchFocus = remember { FocusRequester() }
     var searchFocusPending by remember { mutableStateOf(false) }
     LaunchedEffect(section, searchFocusPending) {
@@ -184,7 +186,7 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
     val filteredFiles by produceState(
         initialValue = emptyList<FileRecord>(),
         vm.report, folderPath, search, minimumSize, maximumSize, categoryFilter,
-        fileSort, last30Days, extensionFilter
+        fileSort, last30Days, extensionFilter, onlyEmpty, onlyHidden
     ) {
         val allFiles = vm.report?.files.orEmpty()
         val options = AdvancedFilter(
@@ -194,7 +196,9 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
             kind = categoryFilter,
             modifiedAfterMillis = if (last30Days)
                 System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000 else 0L,
-            sort = fileSort
+            sort = fileSort,
+            onlyEmpty = onlyEmpty,
+            onlyHidden = onlyHidden
         )
         value = withContext(Dispatchers.Default) {
             val scoped = if (folderPath.isBlank()) allFiles else allFiles.filter {
@@ -286,17 +290,29 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
                         FilterStrip(
                             minimumSize, { minimumSize = it }, maximumSize, { maximumSize = it },
                             categoryFilter, { categoryFilter = it }, fileSort, { fileSort = it },
-                            last30Days, { last30Days = it }
+                            last30Days, { last30Days = it },
+                            onlyEmpty, { checked ->
+                                onlyEmpty = checked
+                                if (checked) {
+                                    minimumSize = 0L
+                                    maximumSize = Long.MAX_VALUE
+                                }
+                            },
+                            onlyHidden, { onlyHidden = it }
                         )
                         SavedFiltersRow(vm, {
                             vm.saveFilter(SavedFilter(it, minimumSize, maximumSize,
-                                categoryFilter, last30Days, fileSort))
+                                categoryFilter, last30Days, fileSort,
+                                onlyEmpty, onlyHidden, extensionFilter))
                         }, { preset ->
                             minimumSize = preset.minSize
                             maximumSize = preset.maxSize
                             categoryFilter = preset.kind
                             last30Days = preset.recentOnly
                             fileSort = preset.sort
+                            onlyEmpty = preset.onlyEmpty
+                            onlyHidden = preset.onlyHidden
+                            extensionFilter = preset.extension
                         })
                         SelectedFolderCard(vm.report, vm.busy, folderPath, onChooseFolder, vm::refresh, { folderPath = "" })
                         if (vm.report != null) {
@@ -378,17 +394,29 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
                     FilterStrip(
                         minimumSize, { minimumSize = it }, maximumSize, { maximumSize = it },
                         categoryFilter, { categoryFilter = it }, fileSort, { fileSort = it },
-                        last30Days, { last30Days = it }
+                        last30Days, { last30Days = it },
+                        onlyEmpty, { checked ->
+                            onlyEmpty = checked
+                            if (checked) {
+                                minimumSize = 0L
+                                maximumSize = Long.MAX_VALUE
+                            }
+                        },
+                        onlyHidden, { onlyHidden = it }
                     )
                     SavedFiltersRow(vm, {
                         vm.saveFilter(SavedFilter(it, minimumSize, maximumSize,
-                            categoryFilter, last30Days, fileSort))
+                            categoryFilter, last30Days, fileSort,
+                                onlyEmpty, onlyHidden, extensionFilter))
                     }, { preset ->
                         minimumSize = preset.minSize
                         maximumSize = preset.maxSize
                         categoryFilter = preset.kind
                         last30Days = preset.recentOnly
                         fileSort = preset.sort
+                        onlyEmpty = preset.onlyEmpty
+                        onlyHidden = preset.onlyHidden
+                        extensionFilter = preset.extension
                     })
                     SelectedFolderCard(
                         vm.report, vm.busy, folderPath, onChooseFolder, vm::refresh,
@@ -1236,7 +1264,9 @@ private fun FilterStrip(
     maxBytes: Long, onMax: (Long) -> Unit,
     category: FileKind?, onCategory: (FileKind?) -> Unit,
     sort: FileSort, onSort: (FileSort) -> Unit,
-    recent: Boolean, onRecent: (Boolean) -> Unit
+    recent: Boolean, onRecent: (Boolean) -> Unit,
+    onlyEmpty: Boolean, onEmpty: (Boolean) -> Unit,
+    onlyHidden: Boolean, onHidden: (Boolean) -> Unit
 ) {
     Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
         .padding(horizontal = 12.dp, vertical = 4.dp),
@@ -1253,6 +1283,10 @@ private fun FilterStrip(
             label = { Text("≤1 GB") })
         FilterChip(recent, onClick = { onRecent(!recent) },
             label = { Text(stringResource(R.string.recent_files)) })
+        FilterChip(onlyEmpty, onClick = { onEmpty(!onlyEmpty) },
+            label = { Text(stringResource(R.string.filter_empty_only)) })
+        FilterChip(onlyHidden, onClick = { onHidden(!onlyHidden) },
+            label = { Text(stringResource(R.string.filter_hidden_only)) })
         FilterChip(category == null, onClick = { onCategory(null) },
             label = { Text(stringResource(R.string.all_types)) })
         FileKind.entries.forEach { kind ->
