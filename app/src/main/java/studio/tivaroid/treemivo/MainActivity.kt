@@ -937,9 +937,19 @@ private fun SearchBox(
             isError = plan.errors.isNotEmpty()
         )
         if (plan.errors.isNotEmpty()) {
+            val skippedTerms = plan.errors.filter {
+                it.startsWith("Invalid search term: ")
+            }.map { it.removePrefix("Invalid search term: ") }
+            val warning = when {
+                skippedTerms.isNotEmpty() ->
+                    stringResource(R.string.search_invalid) + ": " +
+                        skippedTerms.take(2).joinToString(", ")
+                plan.errors.any { it == "Unclosed quotation mark" } ->
+                    stringResource(R.string.search_unclosed_quote)
+                else -> stringResource(R.string.search_terms_limit)
+            }
             Text(
-                stringResource(R.string.search_invalid) + ": " +
-                    plan.errors.take(2).joinToString("; "),
+                warning,
                 color = MaterialTheme.colorScheme.error,
                 fontSize = 11.sp,
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 3.dp)
