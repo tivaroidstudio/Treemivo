@@ -22,6 +22,17 @@ object SafeFileRemoval {
         ).intentSender
     }
 
+    /** System prompt handles these items as one user-approved transaction (API 30+). */
+    @RequiresApi(30)
+    fun trashBatchRequest(context: Context, files: List<FileRecord>): IntentSender {
+        require(files.isNotEmpty() && files.size <= 500)
+        require(files.all(::supportsTrash))
+        require(files.map { it.uri.toString() }.toSet().size == files.size)
+        return MediaStore.createTrashRequest(
+            context.contentResolver, files.map { it.uri }, true
+        ).intentSender
+    }
+
     fun supportsSafDelete(resolver: ContentResolver, file: FileRecord): Boolean {
         if (file.source != FileSource.SAF) return false
         return try {
