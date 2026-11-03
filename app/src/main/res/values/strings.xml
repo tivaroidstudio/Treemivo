@@ -144,4 +144,18 @@
     <string name="share_file">Share file</string>
     <string name="filter_empty_only">Empty files only</string>
     <string name="filter_hidden_only">Hidden files only</string>
+    <string name="growth_title">Storage growth</string>
+    <string name="growth_not_comparable">Take two complete scans of the same authorized source to compare changes.</string>
+    <string name="growth_file_difference">Change in file count</string>
+    <string name="growth_days">days between scans</string>
+    <string name="growth_by_type">Growth by file type</string>
+    <string name="growth_pro_note">Type-by-type comparisons are available in Pro.</string>
+    <string name="growth_scope_note">Only indexed files in matching authorized scopes are compared. A size change does not identify which file was added or removed.</string>
+    <string name="cleanup_screenshots">Screenshots</string>
+    <string name="cleanup_backups">Backup-like files</string>
+    <string name="cleanup_empty_files">Empty files</string>
+    <string name="cleanup_restore_ignored">Show ignored suggestions again</string>
+    <string name="cleanup_ignore">Ignore</string>
+    <string name="pane_resize">Resize detail panel</string>
+    <string name="pane_details">Inspector</string>
 </resources>
