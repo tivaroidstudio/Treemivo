@@ -178,4 +178,9 @@
     <string name="search_help_title">Recherche avancée</string>
     <string name="search_help_description">Combinez type:video, ext:zip, size&gt;100MB, path:Download, after:2026-01-01. Utilisez des guillemets pour les phrases et - pour exclure.</string>
     <string name="search_invalid">Termes de recherche ignorés</string>
+    <string name="changed_files_title">Gros fichiers modifiés</string>
+    <string name="changed_files_scope">Variations de taille des mêmes fichiers parmi les 200 plus gros de la même source autorisée. D’autres fichiers peuvent manquer.</string>
+    <string name="changed_files_none">Aucune variation détectée dans les analyses comparables.</string>
+    <string name="changed_files_less">Afficher moins</string>
+    <string name="changed_files_more">Afficher plus</string>
 </resources>
