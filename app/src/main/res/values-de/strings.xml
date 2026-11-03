@@ -144,4 +144,18 @@
     <string name="share_file">Datei teilen</string>
     <string name="filter_empty_only">Nur leere Dateien</string>
     <string name="filter_hidden_only">Nur versteckte Dateien</string>
+    <string name="growth_title">Speicherwachstum</string>
+    <string name="growth_not_comparable">Für einen Vergleich zwei vollständige Scans derselben freigegebenen Quelle durchführen.</string>
+    <string name="growth_file_difference">Änderung der Dateianzahl</string>
+    <string name="growth_days">Tage zwischen Scans</string>
+    <string name="growth_by_type">Änderung nach Dateityp</string>
+    <string name="growth_pro_note">Vergleiche nach Dateityp sind mit Pro verfügbar.</string>
+    <string name="growth_scope_note">Nur zugängliche Dateien aus identischen freigegebenen Quellen werden verglichen. Größenänderungen zeigen nicht, welche Datei hinzugefügt wurde.</string>
+    <string name="cleanup_screenshots">Screenshots</string>
+    <string name="cleanup_backups">Dateien mit Sicherungskopie-Endung</string>
+    <string name="cleanup_empty_files">Leere Dateien</string>
+    <string name="cleanup_restore_ignored">Ignorierte Vorschläge wieder anzeigen</string>
+    <string name="cleanup_ignore">Ignorieren</string>
+    <string name="pane_resize">Detailansicht vergrößern oder verkleinern</string>
+    <string name="pane_details">Details</string>
 </resources>
