@@ -183,4 +183,6 @@
     <string name="changed_files_none">No se detectaron cambios de tamaño en análisis comparables.</string>
     <string name="changed_files_less">Mostrar menos</string>
     <string name="changed_files_more">Mostrar más</string>
+    <string name="search_unclosed_quote">Cierra las comillas para completar la búsqueda.</string>
+    <string name="search_terms_limit">Utiliza como máximo 30 términos; se ignoraron los demás.</string>
 </resources>
