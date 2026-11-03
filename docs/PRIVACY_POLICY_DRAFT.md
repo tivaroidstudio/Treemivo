@@ -16,3 +16,7 @@ Files are never deleted automatically. Media removal uses Android system trash c
 
 ### Contact and updates
 Before publishing, replace this draft with a public policy including support contact, revision date, rights requests and any actual additional services or SDKs enabled at release.
+
+
+### New offline processing (development)
+With a deliberate user action, Treemivo may load bounded photo thumbnails to calculate perceptual similarity hashes, preview a media/PDF/text file, or temporarily copy a ZIP file (up to 32 MB) into app-private cache to read its index without extracting contents. Temporary ZIP files are deleted after inspection. These are local operations. Pro history may retain truncated HMAC-protected folder identifiers and aggregate sizes in private app storage to compare scans; no raw folder paths are persisted in history. Users can clear scan summaries from the app.
