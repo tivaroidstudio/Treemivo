@@ -20,7 +20,8 @@ class ScanHistoryTest {
             1234L, "text/plain", Uri.parse("content://example/private/secret")
         )
         history.record("FOLDERS", StorageReport("Private", listOf(file),
-            folderBreakdown(listOf(file)), false))
+            folderBreakdown(listOf(file)), false),
+            listOf("content://example/tree/private"))
         val entries = history.entries()
         assertEquals(1, entries.size)
         assertEquals(1, entries.single().count)
@@ -36,7 +37,7 @@ class ScanHistoryTest {
         val history = ScanHistory(RuntimeEnvironment.getApplication())
         history.clear()
         val report = StorageReport("Empty", emptyList(), emptyList(), false)
-        repeat(40) { history.record("MEDIA", report) }
+        repeat(40) { history.record("MEDIA", report, listOf("READ_MEDIA_IMAGES")) }
         assertEquals(30, history.entries().size)
         history.clear()
     }
