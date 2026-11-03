@@ -59,6 +59,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import studio.tivaroid.treemivo.data.*
 import studio.tivaroid.treemivo.ui.*
 import java.util.Locale
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 private enum class Section(val labelId: Int, val icon: ImageVector) {
     MAP(R.string.map, Icons.Outlined.GridView),
@@ -152,13 +154,14 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
         selectedFile = null
         section = Section.MAP
     }
-    val filesInFolder = remember(vm.report, folderPath) {
-        vm.report?.files?.filter {
-            folderPath.isEmpty() || it.relativePath.startsWith(folderPath + "/")
-        } ?: emptyList()
-    }
-    val filteredFiles = remember(filesInFolder, search, minimumSize, maximumSize, categoryFilter, fileSort, last30Days) {
-        filterFiles(filesInFolder, AdvancedFilter(
+    // Filtering/sorting up to 100,000 files must not block the Compose UI thread.
+    val filteredFiles by produceState(
+        initialValue = emptyList<FileRecord>(),
+        vm.report, folderPath, search, minimumSize, maximumSize, categoryFilter,
+        fileSort, last30Days
+    ) {
+        val allFiles = vm.report?.files.orEmpty()
+        val options = AdvancedFilter(
             query = search,
             minSizeBytes = minimumSize,
             maxSizeBytes = maximumSize,
@@ -166,7 +169,13 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
             modifiedAfterMillis = if (last30Days)
                 System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000 else 0L,
             sort = fileSort
-        ))
+        )
+        value = withContext(Dispatchers.Default) {
+            val scoped = if (folderPath.isBlank()) allFiles else allFiles.filter {
+                it.relativePath.startsWith(folderPath + "/")
+            }
+            filterFiles(scoped, options)
+        }
     }
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
@@ -769,10 +778,15 @@ private fun ContentForSection(
             }
         }
         Section.FOLDERS -> {
-            val folders = remember(files, rootFilter) {
-                folderBreakdown(files).filter {
-                    rootFilter.isEmpty() || it.relativePath.startsWith(rootFilter + "/")
-                }.sortedByDescending { it.sizeBytes }
+            val folders by produceState(
+                initialValue = emptyList<FolderRecord>(), files, rootFilter
+            ) {
+                value = withContext(Dispatchers.Default) {
+                    folderBreakdown(files).filter {
+                        rootFilter.isEmpty() ||
+                            it.relativePath.startsWith(rootFilter + "/")
+                    }.sortedByDescending { it.sizeBytes }
+                }
             }
             val maxBytes = folders.maxOfOrNull { it.sizeBytes } ?: 0L
             LazyColumn(
@@ -854,7 +868,11 @@ private fun ContentForSection(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
                             Spacer(Modifier.width(12.dp))
-                            Text(stringResource(R.string.finding_duplicates), color = TreemivoMuted)
+                            Text(stringResource(R.string.finding_duplicates) + " " +
+                                vm.duplicatesProgress, color = TreemivoMuted)
+                            TextButton(onClick = vm::cancelDuplicateCheck) {
+                                Text(stringResource(R.string.cancel_scan))
+                            }
                         }
                     } else Button(
                         onClick = vm::verifyDuplicates,
