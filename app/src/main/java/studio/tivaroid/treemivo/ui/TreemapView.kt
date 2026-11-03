@@ -7,6 +7,7 @@ import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -21,6 +22,8 @@ import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import studio.tivaroid.treemivo.data.FileKind
 import studio.tivaroid.treemivo.data.FileRecord
 
@@ -47,7 +50,14 @@ fun TreemapView(
     modifier: Modifier = Modifier,
     onSelect: (FileRecord) -> Unit
 ) {
-    val tiles = remember(files) { buildTreemap(files, { it.sizeBytes }) }
+    val tileState = produceState(
+        initialValue = emptyList<TreemapRect<FileRecord>>(), files
+    ) {
+        value = withContext(Dispatchers.Default) {
+            buildTreemap(files, { it.sizeBytes })
+        }
+    }
+    val tiles = tileState.value
     val scale = LocalDensity.current.density
     var zoom by remember(files) { mutableFloatStateOf(1f) }
     var pan by remember(files) { mutableStateOf(Offset.Zero) }
