@@ -97,3 +97,19 @@ Automated instrumented tests, emulator QA and full builds have **not** been exec
 - [ ] Retest all prior confirmation dialogs and system trash cancellation paths after adding review categories.
 
 These scenarios are queued for the user's final verification phase; no build or tests were run in this feature batch.
+
+
+## Deferred v0.6 scenarios — intentionally not run yet
+
+1. Parse and combine `type:`, `ext:`, `name:`, `path:`, `in:`, `size>`, `size<`, `before:` and `after:` expressions, quoted phrases and exclusion; display errors for invalid input.
+2. Verify unknown-size files do not satisfy size comparison expressions.
+3. Verify advanced searches work on the phone map and DeX sidebar without losing the focused query.
+4. Save Pro filters that contain quoted search expressions; restart and reapply; legacy presets should still load with empty query.
+5. Group files by folders, extensions, modification years, size bands and numbered-name families; ensure a name family is never labeled a confirmed duplicate.
+6. Switch collection modes rapidly and open/preview/share selected files; handle disconnected document providers safely.
+7. Browse 100,000 indexed records on budget Android phones: background grouping, scrolling performance, bounded UI memory and cancellation.
+8. Compare top-200 large-file tracking across matching complete snapshots; verify differing source permission scopes, partial scans and unknown sizes do not yield fabricated file changes.
+9. Verify no raw file paths, filenames or content URIs are written to scan history; verify saved user-entered search text is stored only privately.
+10. Complete Android SDK 36 build, unit tests, lint and device/manual destructive-operation regressions at the final testing stage.
+
+New Robolectric/JUnit test source files have been prepared for advanced search, collections and tracked-file comparisons, but have not been executed.
