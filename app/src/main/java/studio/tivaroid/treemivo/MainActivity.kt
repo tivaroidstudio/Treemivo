@@ -654,7 +654,7 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
                             Text(stringResource(R.string.app_language))
                         }
                     }
-                    Text("v0.5.0 · Tivaroid Studio", color = TreemivoMuted)
+                    Text("v0.6.0 · Tivaroid Studio", color = TreemivoMuted)
                 }
             },
             confirmButton = {
