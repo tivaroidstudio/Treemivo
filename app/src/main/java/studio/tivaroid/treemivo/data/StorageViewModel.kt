@@ -16,6 +16,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
+import studio.tivaroid.treemivo.billing.ProBilling
 
 data class DeviceSpace(val usedBytes: Long, val totalBytes: Long)
 enum class ScanOrigin { FOLDERS, MEDIA }
@@ -26,6 +27,7 @@ class StorageViewModel(app: Application) : AndroidViewModel(app) {
     private val safScanner = StorageScanner(app.contentResolver)
     private val mediaScanner = MediaScanner(app)
     private val historyStore = ScanHistory(app)
+    val billing = ProBilling(app)
     private var scanJob: Job? = null
 
     var treeUris by mutableStateOf(loadFolderUris())
@@ -270,4 +272,10 @@ class StorageViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun clearError() { errorMessage = null }
+
+    override fun onCleared() {
+        scanJob?.cancel()
+        billing.close()
+        super.onCleared()
+    }
 }

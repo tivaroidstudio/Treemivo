@@ -1,5 +1,7 @@
 package studio.tivaroid.treemivo
 
+import android.Manifest
+import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
@@ -8,11 +10,13 @@ import android.os.Build
 import android.provider.Settings as AndroidSettings
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.result.IntentSenderRequest
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -22,6 +26,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.GridView
@@ -56,7 +62,8 @@ private enum class Section(val labelId: Int, val icon: ImageVector) {
     MAP(R.string.map, Icons.Outlined.GridView),
     FOLDERS(R.string.folders, Icons.Outlined.Folder),
     TYPES(R.string.file_types, Icons.Outlined.InsertDriveFile),
-    DUPLICATES(R.string.duplicates, Icons.Outlined.ContentCopy)
+    DUPLICATES(R.string.duplicates, Icons.Outlined.ContentCopy),
+    HISTORY(R.string.history, Icons.Outlined.History)
 }
 
 class MainActivity : ComponentActivity() {
@@ -90,10 +97,22 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
     var selectedFile by remember { mutableStateOf<FileRecord?>(null) }
     var search by rememberSaveable { mutableStateOf("") }
     var settingsOpen by remember { mutableStateOf(false) }
+    var confirmRemoval by remember { mutableStateOf<FileRecord?>(null) }
+    var minimumSize by rememberSaveable { mutableLongStateOf(0L) }
+    var maximumSize by rememberSaveable { mutableLongStateOf(Long.MAX_VALUE) }
+    var categoryFilter by rememberSaveable { mutableStateOf<FileKind?>(null) }
+    var fileSort by rememberSaveable { mutableStateOf(FileSort.SIZE_DESC) }
+    var last30Days by rememberSaveable { mutableStateOf(false) }
 
     val chooseTree = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) {
         if (it != null) vm.setTree(it)
     }
+    val requestMedia = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { if (vm.hasMediaAccess()) vm.selectOrigin(ScanOrigin.MEDIA) }
+    val trashLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartIntentSenderForResult()
+    ) { result -> if (result.resultCode == Activity.RESULT_OK) vm.refresh() }
     val exportCsv = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("text/csv")
     ) { if (it != null) vm.exportCsv(it) }
@@ -105,6 +124,26 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
     }
 
     val onChooseFolder: () -> Unit = { chooseTree.launch(null) }
+    val onScanMedia: () -> Unit = {
+        if (vm.hasMediaAccess()) vm.selectOrigin(ScanOrigin.MEDIA)
+        else {
+            val permissions = when {
+                Build.VERSION.SDK_INT >= 34 -> arrayOf(
+                    Manifest.permission.READ_MEDIA_IMAGES,
+                    Manifest.permission.READ_MEDIA_VIDEO,
+                    Manifest.permission.READ_MEDIA_AUDIO,
+                    Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED
+                )
+                Build.VERSION.SDK_INT >= 33 -> arrayOf(
+                    Manifest.permission.READ_MEDIA_IMAGES,
+                    Manifest.permission.READ_MEDIA_VIDEO,
+                    Manifest.permission.READ_MEDIA_AUDIO
+                )
+                else -> arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
+            }
+            requestMedia.launch(permissions)
+        }
+    }
     val onExport: () -> Unit = { if (vm.report != null) exportCsv.launch("treemivo_report.csv") }
     val onFolder: (String) -> Unit = {
         folderPath = it
@@ -116,12 +155,16 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
             folderPath.isEmpty() || it.relativePath.startsWith(folderPath + "/")
         } ?: emptyList()
     }
-    val filteredFiles = remember(filesInFolder, search) {
-        if (search.isBlank()) filesInFolder
-        else filesInFolder.filter {
-            it.name.contains(search, ignoreCase = true) ||
-                it.relativePath.contains(search, ignoreCase = true)
-        }
+    val filteredFiles = remember(filesInFolder, search, minimumSize, maximumSize, categoryFilter, fileSort, last30Days) {
+        filterFiles(filesInFolder, AdvancedFilter(
+            query = search,
+            minSizeBytes = minimumSize,
+            maxSizeBytes = maximumSize,
+            kind = categoryFilter,
+            modifiedAfterMillis = if (last30Days)
+                System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000 else 0L,
+            sort = fileSort
+        ))
     }
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
@@ -175,9 +218,15 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
                             enabled = vm.report != null
                         )
                         SpaceOverview(vm.deviceSpace)
+                        SourceSelector(vm, onChooseFolder, onScanMedia)
+                        FilterStrip(
+                            minimumSize, { minimumSize = it }, categoryFilter,
+                            { categoryFilter = it }, fileSort, { fileSort = it },
+                            last30Days, { last30Days = it }
+                        )
                         SelectedFolderCard(vm.report, vm.busy, folderPath, onChooseFolder, vm::refresh, { folderPath = "" })
                         if (vm.report == null) {
-                            SelectFolderMessage(vm.busy, onChooseFolder)
+                            SelectFolderMessage(vm.busy, onChooseFolder, onScanMedia)
                         } else {
                             MapCard(
                                 filteredFiles,
@@ -196,7 +245,9 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         if (selectedFile != null) {
-                            FileDetailsCard(selectedFile!!, context, Modifier.fillMaxWidth())
+                            FileDetailsCard(selectedFile!!, context, Modifier.fillMaxWidth()) {
+                                confirmRemoval = selectedFile
+                            }
                         }
                         Text(
                             stringResource(if (section == Section.MAP) R.string.folders_title else section.labelId),
@@ -228,6 +279,12 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
                     )
                     SpaceOverview(vm.deviceSpace, Modifier.padding(horizontal = 16.dp))
                     Spacer(Modifier.height(10.dp))
+                    SourceSelector(vm, onChooseFolder, onScanMedia, Modifier.padding(horizontal = 16.dp))
+                    FilterStrip(
+                        minimumSize, { minimumSize = it }, categoryFilter,
+                        { categoryFilter = it }, fileSort, { fileSort = it },
+                        last30Days, { last30Days = it }
+                    )
                     SelectedFolderCard(
                         vm.report, vm.busy, folderPath, onChooseFolder, vm::refresh,
                         { folderPath = "" }, Modifier.padding(horizontal = 16.dp)
@@ -235,7 +292,7 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
                     Spacer(Modifier.height(10.dp))
                     if (vm.report == null) {
                         Box(Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {
-                            SelectFolderMessage(vm.busy, onChooseFolder)
+                            SelectFolderMessage(vm.busy, onChooseFolder, onScanMedia)
                         }
                     } else if (section == Section.MAP) {
                         LazyColumn(
@@ -247,7 +304,11 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
                                 MapCard(filteredFiles, height = 390.dp, onSelect = { selectedFile = it })
                             }
                             if (selectedFile != null) {
-                                item { FileDetailsCard(selectedFile!!, context, Modifier.fillMaxWidth()) }
+                                item {
+                                    FileDetailsCard(selectedFile!!, context, Modifier.fillMaxWidth()) {
+                                        confirmRemoval = selectedFile
+                                    }
+                                }
                             }
                             if (vm.report?.partial == true) item {
                                 Text(stringResource(R.string.scan_limit), color = TreemivoMuted)
