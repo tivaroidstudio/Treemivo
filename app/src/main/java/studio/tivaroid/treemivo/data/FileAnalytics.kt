@@ -33,7 +33,7 @@ fun filterFiles(files: List<FileRecord>, filter: AdvancedFilter): List<FileRecor
     val result = files.asSequence()
         .filter { it.sizeBytes in filter.minSizeBytes..filter.maxSizeBytes }
         .filter { filter.kind == null || it.kind == filter.kind }
-        .filter { !filter.onlyEmpty || it.sizeBytes == 0L }
+        .filter { !filter.onlyEmpty || (it.sizeKnown && it.sizeBytes == 0L) }
         .filter { !filter.onlyHidden || it.name.startsWith('.') }
         .filter { it.modifiedAtMillis >= filter.modifiedAfterMillis }
         .filter {
