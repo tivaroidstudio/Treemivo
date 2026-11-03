@@ -111,6 +111,7 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
     var search by rememberSaveable { mutableStateOf("") }
     var settingsOpen by remember { mutableStateOf(false) }
     var cleanupOpen by remember { mutableStateOf(false) }
+    var collectionsOpen by remember { mutableStateOf(false) }
     var confirmRemoval by remember { mutableStateOf<FileRecord?>(null) }
     var minimumSize by rememberSaveable { mutableLongStateOf(0L) }
     var maximumSize by rememberSaveable { mutableLongStateOf(Long.MAX_VALUE) }
@@ -230,6 +231,7 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
                 event.key == Key.Escape -> {
                     selectedFile = null
                     cleanupOpen = false
+                    collectionsOpen = false
                     settingsOpen = false
                     true
                 }
@@ -294,7 +296,8 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
                             enabled = vm.report != null
                         )
                         SpaceOverview(vm.deviceSpace)
-                        SourceSelector(vm, onChooseFolder, onScanMedia, { cleanupOpen = true })
+                        SourceSelector(vm, onChooseFolder, onScanMedia,
+                            { cleanupOpen = true }, { collectionsOpen = true })
                         FilterStrip(
                             minimumSize, { minimumSize = it }, maximumSize, { maximumSize = it },
                             categoryFilter, { categoryFilter = it }, fileSort, { fileSort = it },
@@ -311,7 +314,7 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
                         SavedFiltersRow(vm, {
                             vm.saveFilter(SavedFilter(it, minimumSize, maximumSize,
                                 categoryFilter, last30Days, fileSort,
-                                onlyEmpty, onlyHidden, extensionFilter))
+                                onlyEmpty, onlyHidden, extensionFilter, search.take(300)))
                         }, { preset ->
                             minimumSize = preset.minSize
                             maximumSize = preset.maxSize
@@ -321,6 +324,7 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
                             onlyEmpty = preset.onlyEmpty
                             onlyHidden = preset.onlyHidden
                             extensionFilter = preset.extension
+                            search = preset.searchQuery
                         })
                         SelectedFolderCard(vm.report, vm.busy, folderPath, onChooseFolder, vm::refresh, { folderPath = "" })
                         if (vm.report != null) {
@@ -406,7 +410,8 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
                     SpaceOverview(vm.deviceSpace, Modifier.padding(horizontal = 16.dp))
                     Spacer(Modifier.height(10.dp))
                     SourceSelector(vm, onChooseFolder, onScanMedia,
-                        { cleanupOpen = true }, Modifier.padding(horizontal = 16.dp))
+                        { cleanupOpen = true }, { collectionsOpen = true },
+                        Modifier.padding(horizontal = 16.dp))
                     FilterStrip(
                         minimumSize, { minimumSize = it }, maximumSize, { maximumSize = it },
                         categoryFilter, { categoryFilter = it }, fileSort, { fileSort = it },
@@ -423,7 +428,7 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
                     SavedFiltersRow(vm, {
                         vm.saveFilter(SavedFilter(it, minimumSize, maximumSize,
                             categoryFilter, last30Days, fileSort,
-                                onlyEmpty, onlyHidden, extensionFilter))
+                                onlyEmpty, onlyHidden, extensionFilter, search.take(300)))
                     }, { preset ->
                         minimumSize = preset.minSize
                         maximumSize = preset.maxSize
@@ -433,6 +438,7 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
                         onlyEmpty = preset.onlyEmpty
                         onlyHidden = preset.onlyHidden
                         extensionFilter = preset.extension
+                        search = preset.searchQuery
                     })
                     SelectedFolderCard(
                         vm.report, vm.busy, folderPath, onChooseFolder, vm::refresh,
@@ -567,6 +573,9 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
         )
     }
     if (cleanupOpen) CleanupCenter(vm) { cleanupOpen = false }
+    if (collectionsOpen && vm.report != null) {
+        SmartCollectionsDialog(vm.report!!.files) { collectionsOpen = false }
+    }
     vm.errorMessage?.let { error ->
         AlertDialog(
             onDismissRequest = vm::clearError,
@@ -896,16 +905,61 @@ private fun FileDetailsCard(
 }
 
 @Composable
-private fun SearchBox(value: String, onValueChange: (String) -> Unit, modifier: Modifier = Modifier) {
-    OutlinedTextField(
-        value = value, onValueChange = onValueChange,
-        modifier = modifier.fillMaxWidth(),
-        placeholder = { Text(stringResource(R.string.search), fontSize = 13.sp) },
-        leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null, tint = TreemivoMuted) },
-        singleLine = true,
-        shape = RoundedCornerShape(14.dp),
-        textStyle = MaterialTheme.typography.bodyMedium
-    )
+private fun SearchBox(
+    value: String, onValueChange: (String) -> Unit, modifier: Modifier = Modifier
+) {
+    var showHelp by rememberSaveable { mutableStateOf(false) }
+    val plan = remember(value) { parseSearchQuery(value) }
+    Column {
+        OutlinedTextField(
+            value = value, onValueChange = onValueChange,
+            modifier = modifier.fillMaxWidth(),
+            placeholder = { Text(stringResource(R.string.search), fontSize = 13.sp) },
+            leadingIcon = {
+                Icon(Icons.Outlined.Search, contentDescription = null, tint = TreemivoMuted)
+            },
+            trailingIcon = {
+                IconButton(onClick = { showHelp = !showHelp }) {
+                    Icon(Icons.Outlined.Info,
+                        contentDescription = stringResource(R.string.search_help_title),
+                        tint = TreemivoAccent)
+                }
+            },
+            singleLine = true,
+            shape = RoundedCornerShape(14.dp),
+            textStyle = MaterialTheme.typography.bodyMedium,
+            isError = plan.errors.isNotEmpty()
+        )
+        if (plan.errors.isNotEmpty()) {
+            Text(
+                stringResource(R.string.search_invalid) + ": " +
+                    plan.errors.take(2).joinToString("; "),
+                color = MaterialTheme.colorScheme.error,
+                fontSize = 11.sp,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 3.dp)
+            )
+        }
+        if (showHelp) {
+            Column(
+                Modifier.fillMaxWidth().padding(8.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text(stringResource(R.string.search_help_title),
+                    fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                Text(stringResource(R.string.search_help_description),
+                    color = TreemivoMuted, fontSize = 12.sp)
+                listOf(
+                    "type:video size>500MB",
+                    "ext:zip,7z path:Download",
+                    "name:\"holiday\" -ext:tmp",
+                    "after:2026-01-01"
+                ).forEach { sample ->
+                    AssistChip(onClick = { onValueChange(sample) },
+                        label = { Text(sample, fontSize = 12.sp) })
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -1246,6 +1300,7 @@ private fun SourceSelector(
     addFolder: () -> Unit,
     scanMedia: () -> Unit,
     onCleanup: () -> Unit,
+    onCollections: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier.fillMaxWidth()) {
@@ -1264,6 +1319,9 @@ private fun SourceSelector(
             }
             Button(onClick = onCleanup, enabled = vm.report != null) {
                 Text(stringResource(R.string.cleanup_title))
+            }
+            OutlinedButton(onClick = onCollections, enabled = vm.report != null) {
+                Text(stringResource(R.string.collections_title))
             }
             if (vm.busy) TextButton(onClick = vm::cancelScan) {
                 Text(stringResource(R.string.cancel_scan))
