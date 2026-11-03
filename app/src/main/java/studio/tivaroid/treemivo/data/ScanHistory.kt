@@ -17,7 +17,8 @@ data class ScanSnapshot(
     val folderSizes: Map<String, Long> = emptyMap(),
     val scopeKey: String = "",
     val partial: Boolean = true,
-    val typeBytes: Map<String, Long> = emptyMap()
+    val typeBytes: Map<String, Long> = emptyMap(),
+    val trackedFiles: Map<String, Long> = emptyMap()
 )
 
 data class FolderChange(
@@ -26,6 +27,13 @@ data class FolderChange(
     val currentBytes: Long
 ) {
     val delta: Long get() = currentBytes - previousBytes
+}
+
+data class TrackedFileChange(
+    val file: FileRecord,
+    val beforeBytes: Long
+) {
+    val deltaBytes: Long get() = file.sizeBytes - beforeBytes
 }
 
 class ScanHistory(context: Context) {
@@ -58,6 +66,8 @@ class ScanHistory(context: Context) {
             val keys = folderData?.keys()?.asSequence()?.toList().orEmpty()
             val kinds = item.optJSONObject("types")
             val kindNames = kinds?.keys()?.asSequence()?.toList().orEmpty()
+            val tracked = item.optJSONObject("tracked")
+            val trackedKeys = tracked?.keys()?.asSequence()?.toList().orEmpty()
             ScanSnapshot(
                 time = item.getLong("time"),
                 source = item.getString("source"),
@@ -67,7 +77,8 @@ class ScanHistory(context: Context) {
                 folderSizes = keys.associateWith { folderData!!.getLong(it) },
                 scopeKey = item.optString("scope", ""),
                 partial = item.optBoolean("partial", true),
-                typeBytes = kindNames.associateWith { kinds!!.optLong(it, 0L) }
+                typeBytes = kindNames.associateWith { kinds!!.optLong(it, 0L) },
+                trackedFiles = trackedKeys.associateWith { tracked!!.optLong(it, 0L) }
             )
         }
     } catch (_: Exception) { emptyList() }
@@ -85,7 +96,13 @@ class ScanHistory(context: Context) {
                 .associate { digest(it.relativePath) to it.sizeBytes },
             scopeKey = scopeKey(source, grants),
             partial = report.partial,
-            typeBytes = breakdown
+            typeBytes = breakdown,
+            trackedFiles = report.files.asSequence()
+                .filter { it.sizeKnown && it.sizeBytes > 0L }
+                .sortedByDescending { it.sizeBytes }
+                .distinctBy { it.uri.toString() }
+                .take(200)
+                .associate { digest(it.uri.toString()) to it.sizeBytes }
         )
         val array = JSONArray()
         (listOf(summary) + entries()).take(30).forEach { snapshot ->
@@ -93,6 +110,8 @@ class ScanHistory(context: Context) {
             snapshot.folderSizes.forEach { (key, size) -> folders.put(key, size) }
             val types = JSONObject()
             snapshot.typeBytes.forEach { (key, bytes) -> types.put(key, bytes) }
+            val tracked = JSONObject()
+            snapshot.trackedFiles.forEach { (key, bytes) -> tracked.put(key, bytes) }
             array.put(JSONObject().apply {
                 put("time", snapshot.time)
                 put("source", snapshot.source)
@@ -101,6 +120,7 @@ class ScanHistory(context: Context) {
                 put("largest", snapshot.largest)
                 put("folders", folders)
                 put("types", types)
+                put("tracked", tracked)
                 put("scope", snapshot.scopeKey)
                 put("partial", snapshot.partial)
             })
@@ -125,6 +145,35 @@ class ScanHistory(context: Context) {
             FolderChange(folder.relativePath, old, folder.sizeBytes)
         }.filter { it.delta != 0L }
             .sortedByDescending { kotlin.math.abs(it.delta) }
+    }
+
+    /**
+     * Compare only the same tracked file URI in a matching, complete scope.
+     * Top-200 samples may change; files that weren't previously tracked are not called new.
+     */
+    fun changedTrackedFiles(
+        previous: ScanSnapshot,
+        current: StorageReport,
+        currentScopeKey: String
+    ): List<TrackedFileChange> {
+        if (previous.partial || current.partial ||
+            previous.scopeKey.isBlank() ||
+            previous.scopeKey != currentScopeKey ||
+            previous.trackedFiles.isEmpty()
+        ) return emptyList()
+        return current.files.asSequence()
+            .filter { it.sizeKnown && it.sizeBytes > 0L }
+            .sortedByDescending { it.sizeBytes }
+            .distinctBy { it.uri.toString() }
+            .take(200)
+            .mapNotNull { file ->
+                val before = previous.trackedFiles[digest(file.uri.toString())]
+                    ?: return@mapNotNull null
+                if (before == file.sizeBytes) null else TrackedFileChange(file, before)
+            }
+            .sortedByDescending { kotlin.math.abs(it.deltaBytes) }
+            .take(25)
+            .toList()
     }
 
     fun clear() = prefs.edit().remove("entries").apply()
