@@ -113,4 +113,7 @@
     <string name="history_chart_label">Historia zajętości (wybrane źródło)</string>
     <string name="zoom_hint">Przybliż dwoma palcami, przesuń mapę; podwójne dotknięcie resetuje.</string>
     <string name="filter_saved_hint">Zapisane filtry wymagają Pro.</string>
+    <string name="inspect_zip">Przejrzyj zawartość ZIP (Pro)</string>
+    <string name="zip_unavailable">Nie można odczytać ZIP lub archiwum przekracza 32 MB.</string>
+    <string name="zip_metadata_warning">Tylko podgląd. Rozmiary pochodzą z archiwum, nie oznaczają odzyskanej pamięci.</string>
 </resources>
