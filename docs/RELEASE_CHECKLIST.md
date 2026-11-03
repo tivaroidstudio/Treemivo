@@ -65,3 +65,14 @@ These checks are not automatically satisfied by a successful code commit.
 - [ ] Check DeX inspector resizing accessibility and a minimum usable treemap width.
 - [ ] Review screenshot/backup heuristics for false positives and inaccurate marketing claims.
 - [ ] Finish build, instrumentation, Robolectric, Lint, destructive-operation manual tests and Play Billing checks.
+
+
+## v0.6 release acceptance (not executed)
+
+- [ ] Verify search grammar and error display in all five languages.
+- [ ] Confirm filenames, text search and modified-date queries use the documented semantics.
+- [ ] Validate Smart Collections navigation, preview opening, large group limits and no false duplicate claims.
+- [ ] Test saved query presets, migration, sensitive query handling and app restart.
+- [ ] Verify historical top-file change comparisons using only identical, authorized, complete scopes.
+- [ ] Benchmark memory use on 100k indexed entries and many history snapshots.
+- [ ] Run the full Android build and manual device QA before merging this draft PR.
