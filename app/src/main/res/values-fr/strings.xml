@@ -183,4 +183,6 @@
     <string name="changed_files_none">Aucune variation détectée dans les analyses comparables.</string>
     <string name="changed_files_less">Afficher moins</string>
     <string name="changed_files_more">Afficher plus</string>
+    <string name="search_unclosed_quote">Fermez les guillemets pour terminer la recherche.</string>
+    <string name="search_terms_limit">Utilisez au maximum 30 termes ; les autres ont été ignorés.</string>
 </resources>
