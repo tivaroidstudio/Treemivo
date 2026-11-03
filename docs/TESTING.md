@@ -59,3 +59,22 @@ Android SDK/emulator and network package retrieval are unavailable in the author
 | Android 14 select-only photos | Only authorized media considered; total file map is partial |
 
 **Regression**: verify main Material3 screen, MediaStore consent, page layout, persistent SAF folders and billing setup; no test here guarantees Google Play release readiness.
+
+
+## Deferred 0.4 validation scenarios — DO NOT mark done yet
+
+These scenarios belong to the planned final Android QA phase.
+
+1. Directory treemap at root: blocks represent immediate children and sum to scanned indexed bytes; tapping a folder focuses its descendants and back/breadcrumb returns to root.
+2. Rapid folder navigation with 100,000 indexed records: background treemap building must not freeze the UI; cancel/refresh must not display stale results.
+3. Bookmarks: pin nested folder, change source, return, remove folder grant, and verify stale bookmarks are not offered as accessible files.
+4. File extension filtering: open Types/Insights, tap an extension, verify map/list; clear chip resets filtering without altering scan results.
+5. Hidden and zero-byte filters: verify combinations with size, type, age and existing saved presets; migrate older saved presets correctly.
+6. Insights: compare extension totals and file-age buckets to independently inspected test data; handle missing modified dates and empty scans.
+7. JSON export: verify parsing, Unicode, quotes/newlines in filenames, no truncation at large inventory size and no unexpected network access.
+8. File sharing: external receiving apps should open shared media and SAF URIs with temporary read permission, then revoke access when appropriate.
+9. Desktop mode: Ctrl+F focuses search, Ctrl+R rescans, Esc closes dialogs; try mouse/touch and DeX resizing.
+10. Long path breadcrumbs and 24 pinned folders: check narrow phone, 200% font scaling, TalkBack and all five locales.
+11. Regression: default map, duplicate SHA-256, system trash, billing purchase restoration, PDF report, photo similarity and SAF permissions.
+
+Automated instrumented tests, emulator QA and full builds have **not** been executed for this development batch at the user's request.
