@@ -4,7 +4,7 @@ import android.net.Uri
 
 enum class FileSource { SAF, MEDIA }
 
-/** Names and paths are relative to a user-granted SAF tree, never to all internal storage. */
+/** Each record refers to an explicitly authorized SAF document or accessible indexed media. */
 data class FileRecord(
     val name: String,
     val relativePath: String,

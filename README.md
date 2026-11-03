@@ -1,31 +1,48 @@
-# Treemivo — visual storage analyzer
+# Treemivo — visual storage analyzer (Android)
 
-Native Android (Kotlin + Jetpack Compose) by **Tivaroid Studio**.
+**Tivaroid Studio** · Kotlin · Jetpack Compose · Android 8–16
 
-## Product vision
-A fast, private visual storage explorer inspired by treemaps. The phone UI follows the supplied dark mockup; a wide window (tablet / DeX / connected display) shows navigation, a large treemap, and a detail panel at once.
+Treemivo is a storage explorer with a real file-size treemap, source-aware reporting, filters, optional duplicate detection and a responsive Android desktop-window layout. The dark UI follows the supplied phone mockup. Samsung DeX / connected monitor windowing uses sidebar + treemap + detail pane at 900dp width or more.
 
-## Current prototype
-- Read-only analysis of a **user-selected folder** using Android Storage Access Framework (SAF).
-- Real file-size scan and color-coded interactive treemap; folder and file-type breakdown.
-- Duplicate detection by **size and SHA-256 contents** on demand.
-- CSV export, tap a file to open it in another app.
-- Responsive layout: phone bottom navigation, desktop sidebar, two content panes.
-- Localized Android string resources: English, Polish, German, Spanish, French; language follows system settings, with an in-app shortcut to Android 13+ per-app language preferences.
-- All analysis is **on-device**, with no internet permission, telemetry or account.
+## Available functionality
 
-## Development
-Open this repository in Android Studio with JDK 17 and Android SDK 36.
-Gradle 8.13 / AGP 8.12.3 / Kotlin 2.3.21. Run `./gradlew :app:assembleDebug` on Linux/macOS, or `gradlew.bat :app:assembleDebug` on Windows. The Gradle wrapper scripts and JAR are included.
+- **Scoped media library:** uses indexed Android MediaStore Images, Video and Audio collections when permissions are granted. Android 14+ may expose *only user-selected photos/videos*.
+- **Selected folders:** pick and persist multiple folders using Android Storage Access Framework (SAF); revoke a folder grant from app settings.
+- **Fast, interruptible scans:** background I/O, single-pass size enumeration, batched progress, cancel controls and a 100,000-entry safety cap per scan.
+- **Map and reports:** real-size interactive treemap (260 largest tiles for legibility), directory breakdown, file types and CSV export.
+- **Advanced filters:** name/path search, 100MB/1GB lower bounds, 1GB upper bound, file types, last 30 days, sort by size, filename or modified date. Heavy sorting and folder summaries run off the UI thread.
+- **Exact duplicates:** candidates grouped by size and checked with SHA-256 on demand, cancelable with progress.
+- **Safe disposal:** Android 11+ indexed media goes to the system trash only after in-app confirmation AND Android's own system approval. SAF documents may be permanently deleted only after an explicit irreversible-action warning; providers may refuse the action. There is no automatic/bulk deletion.
+- **History:** aggregate-only scan summaries, most recent 3 free / last 30 with Pro. Pro also displays comparisons to older scans of the same source.
+- **Pro billing:** Google Play Billing 9.1.0 one-time product ID `treemivo_pro_lifetime`. No hardcoded Pro toggle. A real product must be configured in Play Console and tested before launch.
+- **Localization:** English, Polish, German, Spanish and French through `res/values-*/strings.xml`; locale selection uses Android's app language settings on Android 13+.
+- No app network permission, telemetry, advertising SDK, or automatic uploads.
 
-## Important Android limitation
-On Android 11+, SAF cannot select the storage root, the Downloads folder root, or Android/data and Android/obb. The storage bar shows **device-wide** free/used space; the treemap shows **only files in the user-selected folder**. Do not confuse these statistics. The app intentionally does **not** request `MANAGE_EXTERNAL_STORAGE` or delete files. A later, justified file-management edition can evaluate Play policy and alternative MediaStore access before promising full-device scan.
+## Critical storage limitation
 
-## Next production milestones
-1. Instrumented QA on Android 10–16 and Samsung DeX / desktop windowing.
-2. Incremental scans, caching, progress and cancellation for large trees.
-3. Safe bulk clean-up with per-file confirmation and undo where feasible.
-4. UX polish, accessibility, dark/light themes, performance tests, store listing, privacy policy.
-5. Optional Pro unlock (advanced filters, saved reports, compare scans); core access and truthful basic analysis stay free.
+This is **NOT** a full unrestricted scan of all phone data. On modern Android the SAF picker cannot grant the entire storage root, root Downloads, or other apps' private data folders. MediaStore can read **only accessible indexed media**, according to Android permissions. Other files require separate user-authorized folder grants. The device-wide used/free indicator is independent of the selected source's treemap total, so the values need not add up. Do not market Treemivo as an all-files/root filesystem scanner.
 
-No binaries, personal user files or secrets belong in this repository.
+The app deliberately does not declare `MANAGE_EXTERNAL_STORAGE`. Google Play tightly restricts that permission; it is not a shortcut for indexing a user media library. The `READ_MEDIA_IMAGES` / `READ_MEDIA_VIDEO` permissions also require a justified core use case under current Play policy. Get approval as needed before production.
+
+## Build and tests
+
+Requirements: Android SDK 36, Android Studio, JDK 17+ (JDK 21 recommended for Robolectric SDK 36 tests).
+
+- `./gradlew :app:assembleDebug`
+- `./gradlew :app:testDebugUnitTest`
+- `./gradlew :app:lintDebug`
+- `./scripts/verify.sh` — Linux/macOS full local verification.
+
+Windows: use `gradlew.bat` instead of `./gradlew`.
+
+Build stack: Gradle 8.13, Android Gradle Plugin 8.12.3, Kotlin 2.3.21, compile/target SDK 36, minimum SDK 26.
+
+## Monetization checklist
+
+1. Create and activate a **non-consumable** product `treemivo_pro_lifetime` in Play Console.
+2. Configure localized price, internal testing license accounts and billing test tracks.
+3. Verify new, pending, completed, refunded and restored purchase states.
+4. Before a production launch, move purchase-token verification and acknowledgment to a trusted backend using Google Play Developer API if strong anti-fraud assurance is needed. This prototype only queries purchases via BillingClient.
+5. Do not sell features until backend/payment QA and Google Play compliance checks are complete.
+
+Read `docs/RELEASE_CHECKLIST.md` and `docs/TESTING.md` before release.

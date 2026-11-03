@@ -1,23 +1,36 @@
-# Treemivo — release readiness
+# Release readiness: Treemivo
 
-## Before Play production
-- [ ] Confirm debug and release builds with Android SDK 36 / JDK 17.
-- [ ] Run manual tests on Android 10, 13, 15 and 16.
-- [ ] Test Samsung DeX or another external display at 900dp+ and with window resizing.
-- [ ] Measure scans of 1k / 10k / 40k files and provider cancellation/error handling.
-- [ ] Verify reported sizes on multiple document providers.
-- [ ] Check all five locales, screen readers, font scale 200%, contrast and RTL.
-- [ ] Check document opening, duplicate SHA-256 groups and CSV in spreadsheet apps.
-- [ ] Create actual production icon, screenshots, store description and privacy policy URL.
-- [ ] Review Google Play data safety and permissions declarations.
-- [ ] Choose Play Billing product IDs and implement genuine entitlement verification BEFORE offering Pro.
-- [ ] Evaluate whether broad storage access is essential and eligible for Play policy. It is NOT used by this version.
-- [ ] Add performance/robustness tests, crash testing, and independent security review where needed.
+These checks are not automatically satisfied by a successful code commit.
 
-## Commercial approach
-Free: visual map, folder analysis, basic breakdown.
-Potential Pro (future only): saved scan history, comparison between scans, advanced filters, batch reports, custom export.
-No billing, deletion, automatic cleanup, ads or tracking exist in v0.1.0. Never advertise unimplemented functions.
+## Build/test
+- [ ] Assemble debug and release variants with Android SDK 36 (JDK 17+).
+- [ ] Pass all Robolectric unit tests and Android Lint.
+- [ ] Launch on Android 8/10/12/13/14/15/16. Validate permissions on each OS.
+- [ ] Test Android 14+ full photo access, selected-only access, audio-only grant, deny and revoke.
+- [ ] Test images, videos and audio from MediaStore against device file manager.
+- [ ] Test SAF 1 folder, 2 overlapping folders, removed permission, disconnected SD/USB drives, large and cloud-backed folders.
+- [ ] Run 1,000 / 10,000 / 100,000 entry benchmarks; observe memory, ANR, cancel, and provider exceptions.
+- [ ] Verify scans stop, no stale UI state after quickly switching sources.
+- [ ] Verify duplicate hashing by content (same-size different files must not match), and cancellation.
+- [ ] Confirm metadata sorting/filtering including unknown sizes and missing modification dates.
+- [ ] Test MediaStore system trash approval and cancellation; SAF permanent delete with consent and provider denial.
+- [ ] Test CSV encoding and spreadsheet formula injection hardening.
+- [ ] Test portrait, landscape, tablet and Samsung DeX 900dp+ resizing; keyboard/mouse focus.
+- [ ] Validate all 5 locales, 200% fonts, TalkBack/VoiceOver equivalent and accessible contrast.
 
-## Product scope warning
-Android 11+ SAF blocks full internal-storage root, root Downloads and private app directories. The screenshot-like DEVICE storage bar is device-wide; the map is limited to the user-granted tree. Never report the scan total as full-device usage or suggest that every file is accessible.
+## Commercial and legal
+- [ ] Create lifetime INAPP product `treemivo_pro_lifetime` in Play Console; test ownership and restore.
+- [ ] Validate purchase states and tokens on a secure backend before relying on Pro sales at scale.
+- [ ] Confirm Play policies for persistent image/video read permissions; consider Photo Picker where suitable.
+- [ ] No MANAGE_EXTERNAL_STORAGE permission is included.
+- [ ] Host a public privacy policy and correctly fill the Google Play Data Safety form.
+- [ ] Supply original app icon, screenshots, feature graphic, ASO copy and store categories.
+- [ ] QA backup/restore behavior; no confidential file names in scan history.
+- [ ] Set versionCode/versionName for release; test with internal/closed track before production.
+
+## Intentional limits
+- Device space usage is global. Treemap sizes are *only granted indexed media or selected SAF folders*.
+- Tree displays 260 largest file rectangles; all scanned records remain available in lists and CSV.
+- Provider may return unknown file size, zero, inaccessible URI or refuse deletion.
+- Media trash is recoverable through a compatible media manager; SAF direct deletion may be permanent.
+- No automatic deletion, bulk destructive actions, or on-device root file access.
