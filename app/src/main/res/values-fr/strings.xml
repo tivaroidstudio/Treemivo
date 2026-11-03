@@ -113,4 +113,7 @@
     <string name="history_chart_label">Évolution du stockage (source choisie)</string>
     <string name="zoom_hint">Pincez pour zoomer, déplacez par glissement, touchez deux fois pour réinitialiser.</string>
     <string name="filter_saved_hint">Les filtres enregistrés exigent Pro.</string>
+    <string name="inspect_zip">Examiner le contenu ZIP (Pro)</string>
+    <string name="zip_unavailable">Impossible de lire les métadonnées ZIP ou fichier de plus de 32 Mo.</string>
+    <string name="zip_metadata_warning">Aperçu seulement. Les tailles viennent des métadonnées de l’archive.</string>
 </resources>
