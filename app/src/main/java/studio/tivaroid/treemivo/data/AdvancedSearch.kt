@@ -51,12 +51,13 @@ sealed interface SearchMatcher {
     }
     data class Size(val bytes: Long, val greater: Boolean) : SearchMatcher {
         override fun matches(file: FileRecord) =
-            file.sizeKnown && if (greater) file.sizeBytes >= bytes else file.sizeBytes <= bytes
+            file.sizeKnown &&
+                (if (greater) file.sizeBytes > bytes else file.sizeBytes < bytes)
     }
     data class DateRange(val millis: Long, val after: Boolean) : SearchMatcher {
         override fun matches(file: FileRecord) =
             file.modifiedAtMillis > 0L &&
-                if (after) file.modifiedAtMillis >= millis else file.modifiedAtMillis < millis
+                (if (after) file.modifiedAtMillis >= millis else file.modifiedAtMillis < millis)
     }
 }
 
@@ -124,9 +125,11 @@ fun parseSearchQuery(query: String): SearchPlan {
     if (unclosedQuote) errors.add("Unclosed quotation mark")
     val kinds = mapOf(
         "image" to FileKind.IMAGE, "images" to FileKind.IMAGE, "photo" to FileKind.IMAGE,
-        "video" to FileKind.VIDEO, "audio" to FileKind.AUDIO,
+        "video" to FileKind.VIDEO, "videos" to FileKind.VIDEO,
+        "audio" to FileKind.AUDIO, "music" to FileKind.AUDIO,
         "document" to FileKind.DOCUMENT, "documents" to FileKind.DOCUMENT,
-        "archive" to FileKind.ARCHIVE, "installer" to FileKind.INSTALLER,
+        "archive" to FileKind.ARCHIVE, "archives" to FileKind.ARCHIVE,
+        "installer" to FileKind.INSTALLER, "installers" to FileKind.INSTALLER,
         "apk" to FileKind.INSTALLER, "other" to FileKind.OTHER
     )
 
