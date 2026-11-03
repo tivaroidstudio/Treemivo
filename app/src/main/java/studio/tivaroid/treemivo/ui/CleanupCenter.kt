@@ -30,16 +30,12 @@ import kotlinx.coroutines.withContext
 import studio.tivaroid.treemivo.R
 import studio.tivaroid.treemivo.data.*
 
-private enum class CleanupCategory {
-    LARGE_VIDEO, OLD_DOWNLOAD, INSTALLERS, DUPLICATES, SIMILAR
-}
-
 /** The app cannot silently remove documents. Only selected MediaStore URIs get a batch trash request. */
 @Composable
 fun CleanupCenter(vm: StorageViewModel, onDismiss: () -> Unit) {
     val context = LocalContext.current
     val report = vm.report
-    var category by remember { mutableStateOf(CleanupCategory.LARGE_VIDEO) }
+    var category by remember { mutableStateOf(ReviewCategory.LARGE_VIDEO) }
     val checked = remember { mutableStateListOf<String>() }
     var confirmBatch by remember { mutableStateOf(false) }
     var previewFile by remember { mutableStateOf<FileRecord?>(null) }
@@ -51,26 +47,20 @@ fun CleanupCenter(vm: StorageViewModel, onDismiss: () -> Unit) {
     }
     val current = report?.files.orEmpty()
     val now = remember { System.currentTimeMillis() }
+    val ignored = vm.ignoredReviewTokens
     val suggestions by produceState(
-        initialValue = emptyList<FileRecord>(), report, category, vm.duplicates, vm.similarGroups
+        initialValue = emptyList<FileRecord>(),
+        report, category, vm.duplicates, vm.similarGroups, ignored
     ) {
         value = withContext(Dispatchers.Default) {
-            when (category) {
-                CleanupCategory.LARGE_VIDEO ->
-                    current.filter { it.kind == FileKind.VIDEO && it.sizeBytes >= 100L * 1024 * 1024 }
-                CleanupCategory.OLD_DOWNLOAD ->
-                    current.filter {
-                        (it.relativePath.contains("download", ignoreCase = true)) &&
-                        it.modifiedAtMillis > 0 &&
-                        it.modifiedAtMillis < now - 30L * 24 * 60 * 60 * 1000
-                    }
-                CleanupCategory.INSTALLERS ->
-                    current.filter { it.kind == FileKind.INSTALLER }
-                CleanupCategory.DUPLICATES ->
-                    vm.duplicates.flatMap { it.files.drop(1) }
-                CleanupCategory.SIMILAR ->
-                    vm.similarGroups.flatMap { it.files }
-            }.distinctBy { it.uri.toString() }.sortedByDescending { it.sizeBytes }
+            val candidates = when (category) {
+                ReviewCategory.DUPLICATES -> vm.duplicates.flatMap { it.files.drop(1) }
+                ReviewCategory.SIMILAR -> vm.similarGroups.flatMap { it.files }
+                else -> reviewCandidates(current, category, now).map { it.file }
+            }
+            candidates.distinctBy { it.uri.toString() }
+                .filterNot { vm.isIgnoredSuggestion(it) }
+                .sortedByDescending { it.sizeBytes }
         }
     }
     val chosen = remember(checked.toList(), suggestions) {
@@ -81,7 +71,8 @@ fun CleanupCenter(vm: StorageViewModel, onDismiss: () -> Unit) {
     }
     val suggestedTotal = suggestions.sumOf { it.sizeBytes }
     val canUse = vm.billing.isPro || category in listOf(
-        CleanupCategory.LARGE_VIDEO, CleanupCategory.INSTALLERS, CleanupCategory.DUPLICATES
+        ReviewCategory.LARGE_VIDEO, ReviewCategory.INSTALLERS, ReviewCategory.DUPLICATES,
+        ReviewCategory.SCREENSHOTS, ReviewCategory.BACKUPS, ReviewCategory.EMPTY_FILES
     )
 
     LaunchedEffect(category) { checked.clear() }
@@ -103,13 +94,16 @@ fun CleanupCenter(vm: StorageViewModel, onDismiss: () -> Unit) {
                 Text(stringResource(R.string.cleanup_explanation), color = TreemivoMuted, fontSize = 12.sp)
                 Row(Modifier.horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    CleanupCategory.entries.forEach { option ->
+                    ReviewCategory.entries.forEach { option ->
                         val label = when (option) {
-                            CleanupCategory.LARGE_VIDEO -> R.string.cleanup_big_videos
-                            CleanupCategory.OLD_DOWNLOAD -> R.string.cleanup_old_downloads
-                            CleanupCategory.INSTALLERS -> R.string.cleanup_installers
-                            CleanupCategory.DUPLICATES -> R.string.duplicates
-                            CleanupCategory.SIMILAR -> R.string.similar_photos
+                            ReviewCategory.LARGE_VIDEO -> R.string.cleanup_big_videos
+                            ReviewCategory.OLD_DOWNLOAD -> R.string.cleanup_old_downloads
+                            ReviewCategory.INSTALLERS -> R.string.cleanup_installers
+                            ReviewCategory.DUPLICATES -> R.string.duplicates
+                            ReviewCategory.SIMILAR -> R.string.similar_photos
+                            ReviewCategory.SCREENSHOTS -> R.string.cleanup_screenshots
+                            ReviewCategory.BACKUPS -> R.string.cleanup_backups
+                            ReviewCategory.EMPTY_FILES -> R.string.cleanup_empty_files
                         }
                         FilterChip(
                             selected = category == option,
@@ -126,12 +120,12 @@ fun CleanupCenter(vm: StorageViewModel, onDismiss: () -> Unit) {
                         onClick = { (context as? Activity)?.let { vm.billing.purchase(it) } }
                     ) { Text(stringResource(R.string.buy_pro) + (price?.let { " · $it" } ?: "")) }
                 } else {
-                    if (category == CleanupCategory.DUPLICATES && !vm.duplicatesChecked) {
+                    if (category == ReviewCategory.DUPLICATES && !vm.duplicatesChecked) {
                         Button(onClick = vm::verifyDuplicates, enabled = !vm.checkingDuplicates) {
                             Text(stringResource(R.string.find_duplicates))
                         }
                     }
-                    if (category == CleanupCategory.SIMILAR) {
+                    if (category == ReviewCategory.SIMILAR) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Button(
                                 onClick = vm::analyzeSimilarPhotos,
@@ -162,6 +156,12 @@ fun CleanupCenter(vm: StorageViewModel, onDismiss: () -> Unit) {
                             }
                         }
                     }
+                    if (ignored.isNotEmpty()) {
+                        TextButton(onClick = vm::restoreAllSuggestions) {
+                            Text(stringResource(R.string.cleanup_restore_ignored) +
+                                " (" + ignored.size + ")")
+                        }
+                    }
                     LazyColumn(
                         modifier = Modifier.weight(1f),
                         verticalArrangement = Arrangement.spacedBy(7.dp)
@@ -189,7 +189,16 @@ fun CleanupCenter(vm: StorageViewModel, onDismiss: () -> Unit) {
                                             overflow = TextOverflow.Ellipsis)
                                     }
                                     Spacer(Modifier.width(8.dp))
-                                    Text(formatSpace(file.sizeBytes), fontSize = 12.sp)
+                                    Column(horizontalAlignment = Alignment.End) {
+                                        Text(formatSpace(file.sizeBytes), fontSize = 12.sp)
+                                        TextButton(onClick = {
+                                            checked.remove(key)
+                                            vm.ignoreSuggestion(file)
+                                        }) {
+                                            Text(stringResource(R.string.cleanup_ignore),
+                                                fontSize = 11.sp)
+                                        }
+                                    }
                                 }
                             }
                         }
