@@ -55,3 +55,13 @@ These checks are not automatically satisfied by a successful code commit.
 - [ ] Test hardware keyboard shortcuts with focused and unfocused input fields, and all display modes.
 - [ ] Confirm every newly added translated string and layout (EN/PL/DE/ES/FR).
 - [ ] Complete Android compile, Lint, unit/instrumentation tests, device checks and Play Billing testing.
+
+
+## v0.5 release acceptance criteria (pending)
+
+- [ ] Verify all new growth calculations against representative fixture data and permission-scope changes.
+- [ ] Verify HMAC histories and ignored suggestions do not store raw file paths or URIs.
+- [ ] Validate file sizes marked unknown by providers are never labeled as empty.
+- [ ] Check DeX inspector resizing accessibility and a minimum usable treemap width.
+- [ ] Review screenshot/backup heuristics for false positives and inaccurate marketing claims.
+- [ ] Finish build, instrumentation, Robolectric, Lint, destructive-operation manual tests and Play Billing checks.
