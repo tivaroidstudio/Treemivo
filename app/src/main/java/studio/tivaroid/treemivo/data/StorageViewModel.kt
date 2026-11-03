@@ -287,6 +287,12 @@ class StorageViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun folderChanges(snapshot: ScanSnapshot): List<FolderChange> {
+        val current = report ?: return emptyList()
+        if (snapshot.source != origin.name) return emptyList()
+        return historyStore.compare(snapshot, current)
+    }
+
     fun clearHistory() {
         historyStore.clear()
         history = emptyList()
