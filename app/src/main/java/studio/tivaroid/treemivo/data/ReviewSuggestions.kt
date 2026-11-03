@@ -46,7 +46,7 @@ fun reviewCandidates(
                 ext in setOf("bak", "backup", "old", "orig", "tmp") &&
                     it.sizeBytes > 0L
             }
-        ReviewCategory.EMPTY_FILES -> files.filter { it.sizeBytes == 0L }
+        ReviewCategory.EMPTY_FILES -> files.filter { it.sizeKnown && it.sizeBytes == 0L }
         // These two require stronger, explicitly requested analysis and are prepared separately.
         ReviewCategory.DUPLICATES, ReviewCategory.SIMILAR -> emptyList()
     }
