@@ -8,6 +8,8 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings as AndroidSettings
+import java.util.Date
+import java.text.DateFormat
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.result.IntentSenderRequest
@@ -290,7 +292,7 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
                         { folderPath = "" }, Modifier.padding(horizontal = 16.dp)
                     )
                     Spacer(Modifier.height(10.dp))
-                    if (vm.report == null) {
+                    if (vm.report == null && section != Section.HISTORY) {
                         Box(Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {
                             SelectFolderMessage(vm.busy, onChooseFolder, onScanMedia)
                         }
@@ -483,7 +485,7 @@ private fun SelectedFolderCard(
 }
 
 @Composable
-private fun SelectFolderMessage(scanning: Boolean, onChoose: () -> Unit) {
+private fun SelectFolderMessage(scanning: Boolean, onChoose: () -> Unit, onMedia: () -> Unit = onChoose) {
     Surface(shape = RoundedCornerShape(22.dp), color = TreemivoPanel) {
         Column(
             Modifier.fillMaxWidth().padding(28.dp),
@@ -497,7 +499,10 @@ private fun SelectFolderMessage(scanning: Boolean, onChoose: () -> Unit) {
                 fontSize = 20.sp, fontWeight = FontWeight.Bold
             )
             Text(stringResource(R.string.choose_folder_message), color = TreemivoMuted)
-            if (!scanning) Button(onClick = onChoose) { Text(stringResource(R.string.scan_now)) }
+            if (!scanning) {
+                Button(onClick = onChoose) { Text(stringResource(R.string.scan_now)) }
+                OutlinedButton(onClick = onMedia) { Text(stringResource(R.string.scan_media)) }
+            }
             Text(stringResource(R.string.scan_restricted), color = TreemivoMuted, fontSize = 12.sp)
         }
     }
@@ -533,7 +538,10 @@ private fun MapCard(files: List<FileRecord>, height: Dp, onSelect: (FileRecord) 
 }
 
 @Composable
-private fun FileDetailsCard(file: FileRecord, context: Context, modifier: Modifier = Modifier) {
+private fun FileDetailsCard(
+    file: FileRecord, context: Context, modifier: Modifier = Modifier,
+    onDelete: () -> Unit = {}
+) {
     Surface(modifier, shape = RoundedCornerShape(18.dp), color = TreemivoSurface) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(R.string.file_details), fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
@@ -544,6 +552,13 @@ private fun FileDetailsCard(file: FileRecord, context: Context, modifier: Modifi
                 Icon(Icons.Outlined.OpenInNew, null)
                 Spacer(Modifier.width(6.dp))
                 Text(stringResource(R.string.open_file))
+            }
+            if (file.source == FileSource.SAF || SafeFileRemoval.supportsTrash(file)) {
+                OutlinedButton(onClick = onDelete) {
+                    Icon(Icons.Outlined.Delete, null)
+                    Spacer(Modifier.width(6.dp))
+                    Text(stringResource(R.string.remove_file))
+                }
             }
         }
     }
@@ -617,14 +632,53 @@ private fun ContentForSection(
     onSelectFolder: (String) -> Unit
 ) {
     val report = vm.report
-    if (report == null) {
+    if (report == null && section != Section.HISTORY) {
         Box(modifier, contentAlignment = Alignment.Center) { SelectFolderMessage(vm.busy, onChooseFolder) }
         return
     }
     when (section) {
         Section.MAP -> Unit
+        Section.HISTORY -> {
+            val rows = if (vm.billing.isPro) vm.history else vm.history.take(3)
+            LazyColumn(modifier, contentPadding = PaddingValues(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                item { Text(stringResource(R.string.scan_history), fontWeight = FontWeight.SemiBold) }
+                items(rows) { snap ->
+                    Surface(color = TreemivoSurface, shape = RoundedCornerShape(12.dp)) {
+                        Column(Modifier.fillMaxWidth().padding(14.dp)) {
+                            Text(DateFormat.getDateTimeInstance().format(Date(snap.time)),
+                                fontWeight = FontWeight.SemiBold)
+                            Text(snap.source + " • " + snap.count + " " +
+                                stringResource(R.string.files_count).lowercase())
+                            Text(formatBytes(snap.bytes), color = TreemivoAccent)
+                            if (vm.billing.isPro) {
+                                val old = vm.history.dropWhile { it.time >= snap.time }
+                                    .firstOrNull { it.source == snap.source }
+                                if (old != null) {
+                                    val delta = snap.bytes - old.bytes
+                                    Text(stringResource(R.string.history_change) + ": " +
+                                        (if (delta > 0) "+" else "") + formatSignedBytes(delta),
+                                        color = TreemivoMuted)
+                                }
+                            }
+                        }
+                    }
+                }
+                if (!vm.billing.isPro && vm.history.size > 3) item {
+                    Text(stringResource(R.string.pro_history_limit), color = TreemivoMuted)
+                }
+                if (rows.isEmpty()) item {
+                    Text(stringResource(R.string.history_empty), color = TreemivoMuted)
+                }
+                item {
+                    TextButton(onClick = vm::clearHistory) {
+                        Text(stringResource(R.string.clear_history))
+                    }
+                }
+            }
+        }
         Section.FOLDERS -> {
-            val folders = report.folders.filter {
+            val folders = (report?.folders ?: emptyList()).filter {
                 rootFilter.isEmpty() || it.relativePath.startsWith(rootFilter + "/")
             }.sortedByDescending { it.sizeBytes }
             val maxBytes = folders.maxOfOrNull { it.sizeBytes } ?: 0L
@@ -792,3 +846,80 @@ private fun openDocument(context: Context, file: FileRecord) {
         // No installed application supports the selected file type.
     }
 }
+
+@Composable
+private fun SourceSelector(
+    vm: StorageViewModel,
+    addFolder: () -> Unit,
+    scanMedia: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier.fillMaxWidth()) {
+        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilterChip(vm.origin == ScanOrigin.FOLDERS,
+                onClick = { vm.selectOrigin(ScanOrigin.FOLDERS) },
+                label = { Text(stringResource(R.string.saved_folders) + " (${vm.treeUris.size})") })
+            FilterChip(vm.origin == ScanOrigin.MEDIA,
+                onClick = scanMedia,
+                label = { Text(stringResource(R.string.scan_media)) })
+            TextButton(onClick = addFolder) {
+                Icon(Icons.Outlined.FolderOpen, null)
+                Text(stringResource(R.string.add_folder))
+            }
+            if (vm.busy) TextButton(onClick = vm::cancelScan) {
+                Text(stringResource(R.string.cancel_scan))
+            }
+        }
+        if (vm.busy) {
+            LinearProgressIndicator(Modifier.fillMaxWidth())
+            Text(stringResource(R.string.scan_progress) + ": " + vm.progressFiles,
+                color = TreemivoMuted, fontSize = 12.sp)
+        }
+    }
+}
+
+@Composable
+private fun FilterStrip(
+    minBytes: Long, onMin: (Long) -> Unit,
+    maxBytes: Long, onMax: (Long) -> Unit,
+    category: FileKind?, onCategory: (FileKind?) -> Unit,
+    sort: FileSort, onSort: (FileSort) -> Unit,
+    recent: Boolean, onRecent: (Boolean) -> Unit
+) {
+    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
+        .padding(horizontal = 12.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically) {
+        FilterChip(minBytes == 0L, onClick = { onMin(0) },
+            label = { Text(stringResource(R.string.all_sizes)) })
+        FilterChip(minBytes == 100L * 1024 * 1024,
+            onClick = { onMin(100L * 1024 * 1024) }, label = { Text("≥100 MB") })
+        FilterChip(minBytes == 1024L * 1024 * 1024,
+            onClick = { onMin(1024L * 1024 * 1024) }, label = { Text("≥1 GB") })
+        FilterChip(maxBytes < Long.MAX_VALUE,
+            onClick = { onMax(if (maxBytes == Long.MAX_VALUE) 1024L * 1024 * 1024 else Long.MAX_VALUE) },
+            label = { Text("≤1 GB") })
+        FilterChip(recent, onClick = { onRecent(!recent) },
+            label = { Text(stringResource(R.string.recent_files)) })
+        FilterChip(category == null, onClick = { onCategory(null) },
+            label = { Text(stringResource(R.string.all_types)) })
+        FileKind.entries.forEach { kind ->
+            FilterChip(category == kind, onClick = { onCategory(kind) },
+                label = { Text(stringResource(kind.labelId())) })
+        }
+        FilterChip(sort == FileSort.SIZE_DESC, onClick = { onSort(FileSort.SIZE_DESC) },
+            label = { Text(stringResource(R.string.largest_first)) })
+        FilterChip(sort == FileSort.SIZE_ASC, onClick = { onSort(FileSort.SIZE_ASC) },
+            label = { Text(stringResource(R.string.smallest_first)) })
+        FilterChip(sort == FileSort.NAME, onClick = { onSort(FileSort.NAME) },
+            label = { Text("A–Z") })
+        FilterChip(sort == FileSort.MODIFIED_DESC,
+            onClick = { onSort(FileSort.MODIFIED_DESC) },
+            label = { Text(stringResource(R.string.newest_first)) })
+    }
+}
+
+private fun formatSignedBytes(value: Long): String =
+    if (value < 0L) "-" + formatBytes(-value) else formatBytes(value)
