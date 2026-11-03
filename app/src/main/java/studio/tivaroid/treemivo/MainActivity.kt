@@ -236,7 +236,7 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
                                 onSelect = { selectedFile = it }
                             )
                             if (vm.report?.partial == true) {
-                                Text(stringResource(R.string.scan_limit), color = TreemivoMuted)
+                                Text(stringResource(R.string.scan_partial), color = TreemivoMuted)
                             }
                             Text(stringResource(R.string.tap_map_hint), color = TreemivoMuted, fontSize = 13.sp)
                         }
@@ -769,9 +769,11 @@ private fun ContentForSection(
             }
         }
         Section.FOLDERS -> {
-            val folders = (report?.folders ?: emptyList()).filter {
-                rootFilter.isEmpty() || it.relativePath.startsWith(rootFilter + "/")
-            }.sortedByDescending { it.sizeBytes }
+            val folders = remember(files, rootFilter) {
+                folderBreakdown(files).filter {
+                    rootFilter.isEmpty() || it.relativePath.startsWith(rootFilter + "/")
+                }.sortedByDescending { it.sizeBytes }
+            }
             val maxBytes = folders.maxOfOrNull { it.sizeBytes } ?: 0L
             LazyColumn(
                 modifier, contentPadding = PaddingValues(12.dp),

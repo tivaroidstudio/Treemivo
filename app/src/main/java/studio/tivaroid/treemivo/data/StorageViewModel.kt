@@ -29,6 +29,8 @@ class StorageViewModel(app: Application) : AndroidViewModel(app) {
     private val historyStore = ScanHistory(app)
     val billing = ProBilling(app)
     private var scanJob: Job? = null
+    private var duplicateJob: Job? = null
+    private var scanGeneration: Long = 0L
 
     var treeUris by mutableStateOf(loadFolderUris())
         private set
@@ -146,6 +148,9 @@ class StorageViewModel(app: Application) : AndroidViewModel(app) {
         if (origin == ScanOrigin.FOLDERS && treeUris.isEmpty()) return
         if (origin == ScanOrigin.MEDIA && !hasMediaAccess()) return
         scanJob?.cancel()
+        duplicateJob?.cancel()
+        scanGeneration++
+        val generation = scanGeneration
         duplicates = emptyList()
         duplicatesChecked = false
         checkingDuplicates = false
@@ -158,10 +163,12 @@ class StorageViewModel(app: Application) : AndroidViewModel(app) {
             try {
                 val fresh = withContext(Dispatchers.IO) {
                     if (currentMode == ScanOrigin.MEDIA) {
-                        mediaScanner.scan { progressFiles = it }
+                        mediaScanner.scan { if (generation == scanGeneration) progressFiles = it }
                     } else {
                         val parts = currentTrees.mapIndexed { index, uri ->
-                            safScanner.scan(uri) { progressFiles = index * 100_000 + it }
+                            safScanner.scan(uri) {
+                                if (generation == scanGeneration) progressFiles = index * 100_000 + it
+                            }
                         }
                         if (parts.size == 1) {
                             parts.single()
@@ -192,12 +199,13 @@ class StorageViewModel(app: Application) : AndroidViewModel(app) {
             } catch (e: Exception) {
                 errorMessage = e.localizedMessage ?: e.javaClass.simpleName
             } finally {
-                busy = false
+                if (generation == scanGeneration) busy = false
             }
         }
     }
 
     fun cancelScan() {
+        scanGeneration++
         scanJob?.cancel()
         busy = false
     }
@@ -211,7 +219,7 @@ class StorageViewModel(app: Application) : AndroidViewModel(app) {
         val snapshot = report ?: return
         if (checkingDuplicates || busy) return
         checkingDuplicates = true
-        viewModelScope.launch {
+        duplicateJob = viewModelScope.launch {
             try {
                 duplicates = withContext(Dispatchers.IO) {
                     safScanner.findExactDuplicates(snapshot.files)
@@ -275,6 +283,7 @@ class StorageViewModel(app: Application) : AndroidViewModel(app) {
 
     override fun onCleared() {
         scanJob?.cancel()
+        duplicateJob?.cancel()
         billing.close()
         super.onCleared()
     }

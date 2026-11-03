@@ -27,8 +27,8 @@ class MediaScanner(private val context: Context) {
     private fun partialVisualAccess(): Boolean =
         Build.VERSION.SDK_INT >= 34 &&
             permitted("android.permission.READ_MEDIA_VISUAL_USER_SELECTED") &&
-            !permitted(Manifest.permission.READ_MEDIA_IMAGES) &&
-            !permitted(Manifest.permission.READ_MEDIA_VIDEO)
+            (!permitted(Manifest.permission.READ_MEDIA_IMAGES) ||
+                !permitted(Manifest.permission.READ_MEDIA_VIDEO))
 
     suspend fun scan(onProgress: (Int) -> Unit = {}): StorageReport {
         val legacy = Build.VERSION.SDK_INT < 33 &&
