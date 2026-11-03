@@ -24,13 +24,17 @@ data class AdvancedFilter(
     val maxSizeBytes: Long = Long.MAX_VALUE,
     val kind: FileKind? = null,
     val modifiedAfterMillis: Long = 0L,
-    val sort: FileSort = FileSort.SIZE_DESC
+    val sort: FileSort = FileSort.SIZE_DESC,
+    val onlyEmpty: Boolean = false,
+    val onlyHidden: Boolean = false
 )
 
 fun filterFiles(files: List<FileRecord>, filter: AdvancedFilter): List<FileRecord> {
     val result = files.asSequence()
         .filter { it.sizeBytes in filter.minSizeBytes..filter.maxSizeBytes }
         .filter { filter.kind == null || it.kind == filter.kind }
+        .filter { !filter.onlyEmpty || it.sizeBytes == 0L }
+        .filter { !filter.onlyHidden || it.name.startsWith('.') }
         .filter { it.modifiedAtMillis >= filter.modifiedAfterMillis }
         .filter {
             filter.query.isBlank() ||
