@@ -7,6 +7,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.DragHandle
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
@@ -25,13 +27,15 @@ fun DesktopPaneResize(
     onWidth: (Dp) -> Unit
 ) {
     val density = LocalDensity.current
+    val liveWidth by rememberUpdatedState(width)
+    val liveOnWidth by rememberUpdatedState(onWidth)
     Column(
         Modifier.width(18.dp).fillMaxHeight().background(TreemivoBackground)
-            .pointerInput(width, minWidth, maxWidth, density) {
+            .pointerInput(minWidth, maxWidth, density) {
                 detectDragGestures { change, drag ->
                     change.consume()
                     with(density) {
-                        onWidth((width - drag.x.toDp()).coerceIn(minWidth, maxWidth))
+                        liveOnWidth((liveWidth - drag.x.toDp()).coerceIn(minWidth, maxWidth))
                     }
                 }
             },
