@@ -12,25 +12,42 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.json.JSONArray
 
 data class DeviceSpace(val usedBytes: Long, val totalBytes: Long)
+enum class ScanOrigin { FOLDERS, MEDIA }
 
 class StorageViewModel(app: Application) : AndroidViewModel(app) {
     private val context get() = getApplication<Application>()
-    private val settings = app.getSharedPreferences("treemivo", 0)
-    private val scanner = StorageScanner(app.contentResolver)
+    private val prefs = app.getSharedPreferences("treemivo", 0)
+    private val safScanner = StorageScanner(app.contentResolver)
+    private val mediaScanner = MediaScanner(app)
+    private val historyStore = ScanHistory(app)
+    private var scanJob: Job? = null
 
-    var selectedTree by mutableStateOf(settings.getString("tree_uri", null)?.let(Uri::parse))
+    var treeUris by mutableStateOf(loadFolderUris())
+        private set
+    val selectedTree: Uri? get() = treeUris.lastOrNull()
+    var origin by mutableStateOf(
+        runCatching {
+            ScanOrigin.valueOf(prefs.getString("origin", "FOLDERS") ?: "FOLDERS")
+        }.getOrDefault(ScanOrigin.FOLDERS)
+    )
         private set
     var report by mutableStateOf<StorageReport?>(null)
+        private set
+    var history by mutableStateOf(historyStore.entries())
         private set
     var duplicates by mutableStateOf<List<DuplicateGroup>>(emptyList())
         private set
     var duplicatesChecked by mutableStateOf(false)
         private set
     var busy by mutableStateOf(false)
+        private set
+    var progressFiles by mutableStateOf(0)
         private set
     var checkingDuplicates by mutableStateOf(false)
         private set
@@ -47,36 +64,130 @@ class StorageViewModel(app: Application) : AndroidViewModel(app) {
             DeviceSpace(0, 0)
         }
 
-    init { if (selectedTree != null) refresh() }
+    init {
+        if (origin == ScanOrigin.FOLDERS && treeUris.isNotEmpty()) refresh()
+        if (origin == ScanOrigin.MEDIA && mediaScanner.hasAccess()) refresh()
+    }
+
+    private fun loadFolderUris(): List<Uri> {
+        return try {
+            val raw = prefs.getString("trees", null)
+            if (raw != null) {
+                val array = JSONArray(raw)
+                (0 until array.length()).map { Uri.parse(array.getString(it)) }.distinct()
+            } else {
+                // Migration from initial single-folder prototype.
+                prefs.getString("tree_uri", null)?.let { listOf(Uri.parse(it)) } ?: emptyList()
+            }
+        } catch (_: Exception) { emptyList() }
+    }
+
+    private fun persistFolders() {
+        val json = JSONArray()
+        treeUris.forEach { json.put(it.toString()) }
+        prefs.edit().putString("trees", json.toString()).apply()
+    }
+
+    fun hasMediaAccess(): Boolean = mediaScanner.hasAccess()
 
     fun setTree(uri: Uri) {
         try {
             context.contentResolver.takePersistableUriPermission(
                 uri, Intent.FLAG_GRANT_READ_URI_PERMISSION
             )
+            // The provider might not offer a persistable write grant.
+            runCatching {
+                context.contentResolver.takePersistableUriPermission(
+                    uri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                )
+            }
         } catch (e: SecurityException) {
             errorMessage = e.localizedMessage
             return
         }
-        selectedTree = uri
-        settings.edit().putString("tree_uri", uri.toString()).apply()
+        if (uri !in treeUris) treeUris = treeUris + uri
+        persistFolders()
+        selectOrigin(ScanOrigin.FOLDERS)
+    }
+
+    fun removeTree(uri: Uri) {
+        treeUris = treeUris - uri
+        persistFolders()
+        runCatching {
+            context.contentResolver.releasePersistableUriPermission(
+                uri, Intent.FLAG_GRANT_READ_URI_PERMISSION
+            )
+        }
+        // Do not release a write grant from another folder URI.
+        if (origin == ScanOrigin.FOLDERS) {
+            if (treeUris.isEmpty()) {
+                scanJob?.cancel()
+                report = null
+            } else refresh()
+        }
+    }
+
+    fun selectOrigin(value: ScanOrigin) {
+        origin = value
+        prefs.edit().putString("origin", value.name).apply()
+        scanJob?.cancel()
+        report = null
+        if (value == ScanOrigin.MEDIA && !hasMediaAccess()) {
+            errorMessage = "Media permission is needed to scan shared photos, videos and audio."
+            return
+        }
+        if (value == ScanOrigin.FOLDERS && treeUris.isEmpty()) return
         refresh()
     }
 
     fun refresh() {
-        val uri = selectedTree ?: return
-        if (busy) return
-        busy = true
-        errorMessage = null
+        if (origin == ScanOrigin.FOLDERS && treeUris.isEmpty()) return
+        if (origin == ScanOrigin.MEDIA && !hasMediaAccess()) return
+        scanJob?.cancel()
         duplicates = emptyList()
         duplicatesChecked = false
-        viewModelScope.launch {
+        checkingDuplicates = false
+        progressFiles = 0
+        val currentMode = origin
+        val currentTrees = treeUris.toList()
+        scanJob = viewModelScope.launch {
+            busy = true
+            errorMessage = null
             try {
-                report = withContext(Dispatchers.IO) { scanner.scan(uri) }
-            } catch (e: CancellationException) {
-                throw e
+                val fresh = withContext(Dispatchers.IO) {
+                    if (currentMode == ScanOrigin.MEDIA) {
+                        mediaScanner.scan { progressFiles = it }
+                    } else {
+                        val parts = currentTrees.mapIndexed { index, uri ->
+                            safScanner.scan(uri) { progressFiles = index * 100_000 + it }
+                        }
+                        if (parts.size == 1) {
+                            parts.single()
+                        } else {
+                            // Prefix each SAF tree to avoid folder-name collisions.
+                            val merged = parts.flatMapIndexed { index, part ->
+                                val prefix = (index + 1).toString() + " - " + part.rootName
+                                part.files.map { file ->
+                                    file.copy(relativePath = "$prefix/${file.relativePath}")
+                                }
+                            }.distinctBy { it.uri.toString() }
+                            StorageReport(
+                                rootName = "Selected folders (${parts.size})",
+                                files = merged,
+                                folders = folderBreakdown(merged),
+                                partial = parts.any { it.partial }
+                            )
+                        }
+                    }
+                }
+                report = fresh
+                withContext(Dispatchers.IO) {
+                    historyStore.record(currentMode.name, fresh)
+                }
+                history = historyStore.entries()
+            } catch (cancel: CancellationException) {
+                throw cancel
             } catch (e: Exception) {
-                report = null
                 errorMessage = e.localizedMessage ?: e.javaClass.simpleName
             } finally {
                 busy = false
@@ -84,22 +195,48 @@ class StorageViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun cancelScan() {
+        scanJob?.cancel()
+        busy = false
+    }
+
+    fun clearHistory() {
+        historyStore.clear()
+        history = emptyList()
+    }
+
     fun verifyDuplicates() {
         val snapshot = report ?: return
-        if (checkingDuplicates) return
+        if (checkingDuplicates || busy) return
         checkingDuplicates = true
         viewModelScope.launch {
             try {
                 duplicates = withContext(Dispatchers.IO) {
-                    scanner.findExactDuplicates(snapshot.files)
+                    safScanner.findExactDuplicates(snapshot.files)
                 }
                 duplicatesChecked = true
-            } catch (e: CancellationException) {
-                throw e
+            } catch (cancel: CancellationException) {
+                throw cancel
             } catch (e: Exception) {
                 errorMessage = e.localizedMessage ?: e.javaClass.simpleName
             } finally {
                 checkingDuplicates = false
+            }
+        }
+    }
+
+    /** SAF deletion is intentionally irreversible: this method must follow a confirmation dialog. */
+    fun deleteSaf(file: FileRecord) {
+        if (file.source != FileSource.SAF) return
+        viewModelScope.launch {
+            try {
+                val removed = withContext(Dispatchers.IO) {
+                    SafeFileRemoval.deleteSaf(context.contentResolver, file)
+                }
+                if (removed) refresh()
+                else errorMessage = "The document provider refused deletion."
+            } catch (e: Exception) {
+                errorMessage = e.localizedMessage ?: e.javaClass.simpleName
             }
         }
     }
@@ -109,12 +246,12 @@ class StorageViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 context.contentResolver.openOutputStream(uri, "wt")?.bufferedWriter()?.use { writer ->
-                    writer.appendLine("path,name,size_bytes,mime_type")
+                    writer.appendLine("path,name,size_bytes,mime_type,modified_at_millis,source")
                     for (file in snapshot.files) {
                         writer.appendLine(listOf(
-                            file.relativePath, file.name,
-                            file.sizeBytes.toString(), file.mimeType
-                        ).joinToString(",") { "\""+it.replace("\"", "\"\"")+"\"" })
+                            file.relativePath, file.name, file.sizeBytes.toString(),
+                            file.mimeType, file.modifiedAtMillis.toString(), file.source.name
+                        ).joinToString(",") { csvCell(it) })
                     }
                 } ?: error("Cannot open export destination")
             } catch (e: Exception) {
@@ -123,6 +260,13 @@ class StorageViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
         }
+    }
+
+    private fun csvCell(raw: String): String {
+        // Prevent spreadsheet formula injection when exported file names are opened in Excel.
+        val safe = if (raw.trimStart().firstOrNull() in listOf('=', '+', '-', '@'))
+            "'" + raw else raw
+        return "\"" + safe.replace("\"", "\"\"") + "\""
     }
 
     fun clearError() { errorMessage = null }
