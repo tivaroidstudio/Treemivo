@@ -222,8 +222,8 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
                         SpaceOverview(vm.deviceSpace)
                         SourceSelector(vm, onChooseFolder, onScanMedia)
                         FilterStrip(
-                            minimumSize, { minimumSize = it }, categoryFilter,
-                            { categoryFilter = it }, fileSort, { fileSort = it },
+                            minimumSize, { minimumSize = it }, maximumSize, { maximumSize = it },
+                            categoryFilter, { categoryFilter = it }, fileSort, { fileSort = it },
                             last30Days, { last30Days = it }
                         )
                         SelectedFolderCard(vm.report, vm.busy, folderPath, onChooseFolder, vm::refresh, { folderPath = "" })
@@ -283,8 +283,8 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
                     Spacer(Modifier.height(10.dp))
                     SourceSelector(vm, onChooseFolder, onScanMedia, Modifier.padding(horizontal = 16.dp))
                     FilterStrip(
-                        minimumSize, { minimumSize = it }, categoryFilter,
-                        { categoryFilter = it }, fileSort, { fileSort = it },
+                        minimumSize, { minimumSize = it }, maximumSize, { maximumSize = it },
+                        categoryFilter, { categoryFilter = it }, fileSort, { fileSort = it },
                         last30Days, { last30Days = it }
                     )
                     SelectedFolderCard(
@@ -338,6 +338,68 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
         }
     }
 
+    // User confirmation first; MediaStore additionally shows its own system approval.
+    confirmRemoval?.let { file ->
+        AlertDialog(
+            onDismissRequest = { confirmRemoval = null },
+            title = { Text(stringResource(R.string.confirm_remove_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(file.name, fontWeight = FontWeight.SemiBold)
+                    Text(formatBytes(file.sizeBytes))
+                    Text(stringResource(
+                        if (file.source == FileSource.MEDIA) R.string.media_trash_explanation
+                        else R.string.saf_delete_explanation
+                    ))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmRemoval = null }) {
+                    Text(stringResource(R.string.cancel_scan))
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmRemoval = null
+                    selectedFile = null
+                    if (SafeFileRemoval.supportsTrash(file) && Build.VERSION.SDK_INT >= 30) {
+                        try {
+                            trashLauncher.launch(IntentSenderRequest.Builder(
+                                SafeFileRemoval.trashRequest(context, file)
+                            ).build())
+                        } catch (e: Exception) {
+                            // A revoked URI or provider failure is not a successful deletion.
+                            vm.refresh()
+                        }
+                    } else if (file.source == FileSource.SAF) {
+                        vm.deleteSaf(file)
+                    }
+                }) {
+                    Text(stringResource(
+                        if (file.source == FileSource.MEDIA) R.string.move_to_trash
+                        else R.string.delete_permanently
+                    ))
+                }
+            }
+        )
+    }
+    if (section != Section.MAP && selectedFile != null && !settingsOpen) {
+        AlertDialog(
+            onDismissRequest = { selectedFile = null },
+            title = { Text(stringResource(R.string.file_details)) },
+            text = {
+                FileDetailsCard(selectedFile!!, context, Modifier.fillMaxWidth()) {
+                    confirmRemoval = selectedFile
+                    selectedFile = null
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { selectedFile = null }) {
+                    Text(stringResource(R.string.close))
+                }
+            }
+        )
+    }
     vm.errorMessage?.let { error ->
         AlertDialog(
             onDismissRequest = vm::clearError,
@@ -351,9 +413,38 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
             onDismissRequest = { settingsOpen = false },
             title = { Text(stringResource(R.string.about)) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(Modifier.heightIn(max = 430.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(stringResource(R.string.privacy_details))
                     Text(stringResource(R.string.scan_restricted_details))
+                    HorizontalDivider()
+                    Text(stringResource(R.string.saved_folders), fontWeight = FontWeight.Bold)
+                    vm.treeUris.forEach { uri ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(uri.lastPathSegment ?: uri.toString(), Modifier.weight(1f),
+                                maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            IconButton(onClick = { vm.removeTree(uri) }) {
+                                Icon(Icons.Outlined.Delete,
+                                    contentDescription = stringResource(R.string.remove_folder))
+                            }
+                        }
+                    }
+                    HorizontalDivider()
+                    Text(stringResource(R.string.pro_title), fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(
+                        if (vm.billing.isPro) R.string.pro_active else R.string.pro_description
+                    ))
+                    if (!vm.billing.isPro) {
+                        Button(onClick = { (context as? Activity)?.let { vm.billing.purchase(it) } },
+                            enabled = vm.billing.price != null) {
+                            Text(stringResource(R.string.buy_pro) +
+                                (vm.billing.price?.let { " · $it" } ?: ""))
+                        }
+                    }
+                    TextButton(onClick = vm.billing::restore) {
+                        Text(stringResource(R.string.restore_purchases))
+                    }
+                    vm.billing.status?.let { Text(it, color = TreemivoMuted, fontSize = 12.sp) }
                     if (Build.VERSION.SDK_INT >= 33) {
                         TextButton(onClick = {
                             context.startActivity(
