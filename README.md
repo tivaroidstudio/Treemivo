@@ -31,6 +31,27 @@ Treemivo is a storage explorer with a real file-size treemap, source-aware repor
 
 **Not implemented:** scheduled background scans, unrestricted/root scanning, AI quality ranking of photos, automatic cleanup, trusted backend purchase-token validation and a production-tested APK. Do not advertise these capabilities.
 
+## Treemivo 0.4 additions — development branch
+
+**Free features**
+- **Folder-first treemap:** switch between aggregated immediate-folder tiles and individual file tiles. Tap a folder to drill down; breadcrumbs provide a route back to the indexed-source root.
+- **Bookmarked folders:** pin up to 24 folder paths already present in an authorized scan. Bookmarks are navigation shortcuts, not additional Android storage permissions.
+- **Storage insights:** view top filename extensions, distribution by modification age, counts of zero-byte/hidden/very large files, and the largest accessible files. Tap an extension to filter the active file map.
+- **Advanced view filters:** show only zero-byte files or only dot-prefixed hidden files. Filters change the current view, not the underlying disk or scan. The three biggest-size filters are still available.
+- **File details:** copy a relative file path, share an accessible file through Android's share sheet, and inspect the available modification date.
+- **External display workflow:** Ctrl+F focuses search, Ctrl+R rescans the selected scope, and Esc closes common overlays.
+
+**Pro features**
+- **JSON export:** write a detailed structured scan inventory to a user-selected document, including paths and filenames, using streaming output. Exports are local and explicit.
+- **Expanded saved filters:** retain empty/hidden/extension criteria as well as the previous size, file-type, age and sort options.
+
+**Product limitations**
+- Source indexes are scoped to MediaStore access or folders granted through SAF. Neither bookmarks nor folder drilldown can bypass Android restrictions.
+- Extension, age and file-size insights count **accessible indexed files only**. Modification dates can be missing or inaccurate depending on the document provider.
+- Folder mode displays at most 260 largest immediate child tiles at a time, while the existing indexed file lists are not reduced to those tiles.
+- JSON reports may contain sensitive filenames and paths; only export to destinations you trust.
+- This is development code. Build and device testing are intentionally deferred until the later testing phase.
+
 ## Critical storage limitation
 
 This is **NOT** a full unrestricted scan of all phone data. On modern Android the SAF picker cannot grant the entire storage root, root Downloads, or other apps' private data folders. MediaStore can read **only accessible indexed media**, according to Android permissions. Other files require separate user-authorized folder grants. The device-wide used/free indicator is independent of the selected source's treemap total, so the values need not add up. Do not market Treemivo as an all-files/root filesystem scanner.
