@@ -92,4 +92,25 @@
     <string name="pro_description">30 Scans und Scanvergleiche freischalten. Einmaliger Kauf über Google Play.</string>
     <string name="buy_pro">Pro kaufen</string>
     <string name="restore_purchases">Kauf wiederherstellen</string>
+    <string name="cleanup_title">Smart Cleanup</string>
+    <string name="cleanup_explanation">Vorschläge zuerst prüfen. Dateien werden nie automatisch gelöscht.</string>
+    <string name="cleanup_big_videos">Große Videos</string>
+    <string name="cleanup_old_downloads">Alte Downloads</string>
+    <string name="cleanup_installers">Installationsdateien</string>
+    <string name="similar_photos">Ähnliche Fotos</string>
+    <string name="cleanup_pro_only">Mit Pro verfügbar.</string>
+    <string name="analyze_similar">Ähnliche Fotos finden</string>
+    <string name="similar_disclaimer">Ähnlichkeit bedeutet nicht, dass Fotos doppelt sind. Vor dem Löschen prüfen.</string>
+    <string name="cleanup_review_only">zur Prüfung, keine garantierte Ersparnis</string>
+    <string name="clear_selection">Auswahl aufheben</string>
+    <string name="cleanup_none">Keine Dateien in dieser Kategorie.</string>
+    <string name="cleanup_trash_scope">Sammelpapierkorb nur für zugängliche indizierte Medien ab Android 11. Andere Dokumente einzeln prüfen.</string>
+    <string name="move_selected_to_trash">Auswahl in Papierkorb</string>
+    <string name="cleanup_confirm_batch">Dateien vor dem Systemdialog prüfen:</string>
+    <string name="export_pdf">PDF-Bericht exportieren</string>
+    <string name="save_filter">Filter speichern</string>
+    <string name="filter_name">Filtername</string>
+    <string name="history_chart_label">Speicherverlauf (gewählte Quelle)</string>
+    <string name="zoom_hint">Zum Zoomen zusammenziehen, zum Verschieben ziehen, Doppeltippen setzt zurück.</string>
+    <string name="filter_saved_hint">Gespeicherte Filter erfordern Pro.</string>
 </resources>
