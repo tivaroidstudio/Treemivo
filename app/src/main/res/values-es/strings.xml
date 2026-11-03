@@ -158,4 +158,24 @@
     <string name="cleanup_ignore">Ignorar</string>
     <string name="pane_resize">Cambiar tamaño del panel</string>
     <string name="pane_details">Detalles</string>
+    <string name="collections_title">Colecciones inteligentes</string>
+    <string name="collections_scope">Los grupos usan solo metadatos de archivos accesibles e indexados.</string>
+    <string name="collections_back">Atrás</string>
+    <string name="collections_empty">No se encontraron grupos.</string>
+    <string name="collections_preview_limit">Se muestran como máximo 300 archivos por grupo.</string>
+    <string name="collections_not_duplicates">Los nombres parecidos sirven para navegar, no prueban que sean duplicados.</string>
+    <string name="collections_folders">Carpetas</string>
+    <string name="collections_extensions">Extensiones</string>
+    <string name="collections_years">Años</string>
+    <string name="collections_name_families">Series de nombres</string>
+    <string name="collections_file_sizes">Tamaños de archivo</string>
+    <string name="collections_unknown_size">Tamaño desconocido</string>
+    <string name="collections_empty_size">Archivos vacíos</string>
+    <string name="collections_under_10mb">Menos de 10 MB</string>
+    <string name="collections_10_100mb">10–100 MB</string>
+    <string name="collections_100mb_1gb">100 MB–1 GB</string>
+    <string name="collections_over_1gb">1 GB o más</string>
+    <string name="search_help_title">Búsqueda avanzada</string>
+    <string name="search_help_description">Combina términos como type:video, ext:zip, size&gt;100MB, path:Download, after:2026-01-01. Usa comillas para frases y - para excluir.</string>
+    <string name="search_invalid">Términos de búsqueda ignorados</string>
 </resources>
