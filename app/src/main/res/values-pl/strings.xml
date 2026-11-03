@@ -92,4 +92,25 @@
     <string name="pro_description">Odblokuj 30 zapisanych skanów i porównania zmian. Jednorazowy zakup w Google Play.</string>
     <string name="buy_pro">Odblokuj Pro</string>
     <string name="restore_purchases">Przywróć zakup</string>
+    <string name="cleanup_title">Smart Cleanup</string>
+    <string name="cleanup_explanation">Najpierw sprawdź sugestie. Pliki nigdy nie są usuwane automatycznie.</string>
+    <string name="cleanup_big_videos">Duże filmy</string>
+    <string name="cleanup_old_downloads">Stare pobrane pliki</string>
+    <string name="cleanup_installers">Instalatory</string>
+    <string name="similar_photos">Podobne zdjęcia</string>
+    <string name="cleanup_pro_only">Dostępne w Pro.</string>
+    <string name="analyze_similar">Znajdź podobne zdjęcia</string>
+    <string name="similar_disclaimer">Podobne zdjęcia nie muszą być duplikatami. Sprawdź każde przed usunięciem.</string>
+    <string name="cleanup_review_only">do sprawdzenia, to nie gwarantowane oszczędności</string>
+    <string name="clear_selection">Wyczyść zaznaczenie</string>
+    <string name="cleanup_none">Brak plików w tej kategorii.</string>
+    <string name="cleanup_trash_scope">Usuwanie zbiorcze do kosza działa dla dostępnych multimediów na Androidzie 11+. Inne dokumenty trzeba sprawdzić osobno.</string>
+    <string name="move_selected_to_trash">Przenieś wybrane do kosza</string>
+    <string name="cleanup_confirm_batch">Sprawdź pliki przed systemowym potwierdzeniem kosza:</string>
+    <string name="export_pdf">Eksportuj PDF</string>
+    <string name="save_filter">Zapisz filtr</string>
+    <string name="filter_name">Nazwa filtra</string>
+    <string name="history_chart_label">Historia zajętości (wybrane źródło)</string>
+    <string name="zoom_hint">Przybliż dwoma palcami, przesuń mapę; podwójne dotknięcie resetuje.</string>
+    <string name="filter_saved_hint">Zapisane filtry wymagają Pro.</string>
 </resources>
