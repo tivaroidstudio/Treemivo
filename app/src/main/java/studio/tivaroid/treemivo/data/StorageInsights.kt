@@ -50,7 +50,7 @@ fun analyzeStorageInsights(
     for (file in files) {
         val size = file.sizeBytes.coerceAtLeast(0L)
         totalBytes += size
-        if (size == 0L) zeroSize++
+        if (size == 0L && file.sizeKnown) zeroSize++
         if (size >= 1024L * 1024 * 1024) oneGbFiles++
         if (file.name.startsWith('.')) hiddenFiles++
         val extension = file.name.substringAfterLast('.', "")
