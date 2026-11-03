@@ -12,7 +12,8 @@ data class FileRecord(
     val mimeType: String,
     val uri: Uri,
     val modifiedAtMillis: Long = 0L,
-    val source: FileSource = FileSource.SAF
+    val source: FileSource = FileSource.SAF,
+    val sizeKnown: Boolean = true
 ) {
     val parentPath: String get() = relativePath.substringBeforeLast('/', "")
     val kind: FileKind get() = FileKind.detect(name, mimeType)
