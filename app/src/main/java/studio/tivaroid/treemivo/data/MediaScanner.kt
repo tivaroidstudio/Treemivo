@@ -105,7 +105,8 @@ class MediaScanner(private val context: Context) {
                                 mimeType = cursor.getString(mimeIndex) ?: "application/octet-stream",
                                 uri = ContentUris.withAppendedId(collection, cursor.getLong(idIndex)),
                                 modifiedAtMillis = modified * 1000L,
-                                source = FileSource.MEDIA
+                                source = FileSource.MEDIA,
+                                sizeKnown = !cursor.isNull(sizeIndex)
                             )
                         )
                     }
