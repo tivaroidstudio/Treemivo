@@ -15,6 +15,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         resourceConfigurations += listOf("en", "pl", "de", "es", "fr")
     }
+    testOptions { unitTests.isIncludeAndroidResources = true }
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -45,4 +46,5 @@ dependencies {
     implementation("com.android.billingclient:billing:9.1.0")
     debugImplementation("androidx.compose.ui:ui-tooling")
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.robolectric:robolectric:4.16.1")
 }
