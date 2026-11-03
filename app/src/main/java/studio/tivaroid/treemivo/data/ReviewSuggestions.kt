@@ -26,7 +26,7 @@ fun reviewCandidates(
             files.filter {
                 it.relativePath.split('/').any { part ->
                     part.equals("Download", true) || part.equals("Downloads", true)
-                } && it.modifiedAtMillis in 1 until
+                } && it.modifiedAtMillis in 1L until
                     (nowMillis - 30L * 24 * 60 * 60 * 1000)
             }
         ReviewCategory.INSTALLERS ->
