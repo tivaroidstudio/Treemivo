@@ -53,7 +53,8 @@ class ProBilling(app: Application) : PurchasesUpdatedListener {
         ) { result, data ->
             if (result.responseCode == BillingClient.BillingResponseCode.OK) {
                 productDetails = data.productDetailsList.firstOrNull { it.productId == PRODUCT_ID }
-                price = productDetails?.oneTimePurchaseOfferDetails?.formattedPrice
+                price = productDetails?.oneTimePurchaseOfferDetailsList?.firstOrNull()?.formattedPrice
+                    ?: productDetails?.oneTimePurchaseOfferDetails?.formattedPrice
             }
         }
     }
@@ -89,8 +90,11 @@ class ProBilling(app: Application) : PurchasesUpdatedListener {
             status = "Product unavailable. First create it in Google Play Console."
             return
         }
-        val item = BillingFlowParams.ProductDetailsParams.newBuilder()
-            .setProductDetails(details).build()
+        val selectedOffer = details.oneTimePurchaseOfferDetailsList?.firstOrNull()
+        val itemBuilder = BillingFlowParams.ProductDetailsParams.newBuilder()
+            .setProductDetails(details)
+        if (selectedOffer != null) itemBuilder.setOfferToken(selectedOffer.offerToken)
+        val item = itemBuilder.build()
         val result = client.launchBillingFlow(
             activity, BillingFlowParams.newBuilder()
                 .setProductDetailsParamsList(listOf(item)).build()
