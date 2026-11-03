@@ -38,3 +38,24 @@ Use comparable files and repeat each scan 3x on real hardware:
 
 ## Environment note
 Android SDK/emulator and network package retrieval are unavailable in the authoring sandbox. Changes committed to GitHub do not count as a verified APK. The automated Android build and integration tests must run on an Android SDK-equipped machine before merging or publishing.
+
+
+## 0.3 feature-focused device checks (not yet executed)
+| Scenario | Expected result |
+| --- | --- |
+| Pinch/drag/double-tap on phone and DeX | Treemap zooms, pans, resets; selected tile remains accurate after transform |
+| Very large directory (100k files) | UI remains responsive during filter and treemap calculation |
+| Select 3 MediaStore videos | Single in-app confirmation followed by one system trash dialog |
+| Cancel system trash approval | No files are changed |
+| Attempt bulk deletion of a SAF document | No bulk action is offered; single-file irreversible warning remains |
+| Preview a large photo, 4K video, PDF and text | Bounded local thumbnail or safe fallback; no uploads or OOM |
+| Pro compare two visual near-duplicates | Suggestions only, with manual review; never auto-delete |
+| Pro on 500+ images | At most 400 analyzed per user request, with progress/cancel |
+| Open malicious ZIP, huge ZIP or corrupted ZIP | No extraction; reject/cap metadata preview, delete temporary cached file |
+| Pro save filter and reopen app | Filter remains available; free users cannot create new paid presets |
+| Pro export PDF | User chooses output URI, correct metadata, no file upload |
+| 2 scans with same folder changed | HMAC-pseudonymized saved snapshots enable size differences |
+| Mixed MediaStore and SAF history | Changes are compared only within matching source |
+| Android 14 select-only photos | Only authorized media considered; total file map is partial |
+
+**Regression**: verify main Material3 screen, MediaStore consent, page layout, persistent SAF folders and billing setup; no test here guarantees Google Play release readiness.
