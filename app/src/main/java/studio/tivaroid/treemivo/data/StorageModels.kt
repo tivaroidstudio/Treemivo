@@ -2,13 +2,17 @@ package studio.tivaroid.treemivo.data
 
 import android.net.Uri
 
+enum class FileSource { SAF, MEDIA }
+
 /** Names and paths are relative to a user-granted SAF tree, never to all internal storage. */
 data class FileRecord(
     val name: String,
     val relativePath: String,
     val sizeBytes: Long,
     val mimeType: String,
-    val uri: Uri
+    val uri: Uri,
+    val modifiedAtMillis: Long = 0L,
+    val source: FileSource = FileSource.SAF
 ) {
     val parentPath: String get() = relativePath.substringBeforeLast('/', "")
     val kind: FileKind get() = FileKind.detect(name, mimeType)

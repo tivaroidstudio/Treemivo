@@ -3,6 +3,8 @@ package studio.tivaroid.treemivo.data
 import android.content.ContentResolver
 import android.net.Uri
 import android.provider.DocumentsContract
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import java.security.MessageDigest
 
 /**
@@ -13,12 +15,13 @@ import java.security.MessageDigest
  */
 class StorageScanner(private val resolver: ContentResolver) {
     companion object {
-        private const val MAX_ENTRIES = 40_000
+        private const val MAX_ENTRIES = 100_000
         private val PROJECTION = arrayOf(
             DocumentsContract.Document.COLUMN_DOCUMENT_ID,
             DocumentsContract.Document.COLUMN_DISPLAY_NAME,
             DocumentsContract.Document.COLUMN_MIME_TYPE,
-            DocumentsContract.Document.COLUMN_SIZE
+            DocumentsContract.Document.COLUMN_SIZE,
+            DocumentsContract.Document.COLUMN_LAST_MODIFIED
         )
     }
 
@@ -28,7 +31,7 @@ class StorageScanner(private val resolver: ContentResolver) {
         var sizeBytes: Long = 0, var files: Int = 0
     )
 
-    fun scan(treeUri: Uri): StorageReport {
+    suspend fun scan(treeUri: Uri, onProgress: (Int) -> Unit = {}): StorageReport {
         val rootDocumentId = DocumentsContract.getTreeDocumentId(treeUri)
         val rootUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, rootDocumentId)
         val rootName = resolver.query(
@@ -55,8 +58,13 @@ class StorageScanner(private val resolver: ContentResolver) {
                 val nameColumn = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_DISPLAY_NAME)
                 val mimeColumn = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_MIME_TYPE)
                 val sizeColumn = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_SIZE)
+                val modifiedColumn = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_LAST_MODIFIED)
                 while (cursor.moveToNext()) {
-                    if (visited++ >= MAX_ENTRIES) {
+                    if (++visited % 256 == 0) {
+                        currentCoroutineContext().ensureActive()
+                        onProgress(visited)
+                    }
+                    if (visited > MAX_ENTRIES) {
                         partial = true
                         break
                     }
@@ -70,7 +78,9 @@ class StorageScanner(private val resolver: ContentResolver) {
                     } else {
                         val size = if (cursor.isNull(sizeColumn)) 0L else cursor.getLong(sizeColumn).coerceAtLeast(0L)
                         val fileUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, id)
-                        files.add(FileRecord(name, path, size, mime, fileUri))
+                        files.add(FileRecord(name, path, size, mime, fileUri,
+                            if (cursor.isNull(modifiedColumn)) 0L else cursor.getLong(modifiedColumn),
+                            FileSource.SAF))
                         // Roll up each file into every ancestor, not just the immediate parent.
                         var parent = current.path
                         while (parent.isNotEmpty()) {
@@ -87,6 +97,7 @@ class StorageScanner(private val resolver: ContentResolver) {
             if (partial) break
         }
 
+        onProgress(visited)
         return StorageReport(
             rootName = rootName,
             files = files,
