@@ -144,4 +144,18 @@
     <string name="share_file">Udostępnij plik</string>
     <string name="filter_empty_only">Tylko puste pliki</string>
     <string name="filter_hidden_only">Tylko ukryte pliki</string>
+    <string name="growth_title">Przyrost zajętości pamięci</string>
+    <string name="growth_not_comparable">Wykonaj dwa pełne skany tego samego udostępnionego źródła, aby porównać zmiany.</string>
+    <string name="growth_file_difference">Zmiana liczby plików</string>
+    <string name="growth_days">dni między skanami</string>
+    <string name="growth_by_type">Zmiany według typów plików</string>
+    <string name="growth_pro_note">Porównania typów plików są dostępne w Pro.</string>
+    <string name="growth_scope_note">Porównywane są tylko dostępne pliki z identycznego zakresu uprawnień. Zmiana rozmiaru nie wskazuje, który plik dodano lub usunięto.</string>
+    <string name="cleanup_screenshots">Zrzuty ekranu</string>
+    <string name="cleanup_backups">Pliki podobne do kopii zapasowych</string>
+    <string name="cleanup_empty_files">Puste pliki</string>
+    <string name="cleanup_restore_ignored">Przywróć ignorowane sugestie</string>
+    <string name="cleanup_ignore">Ignoruj</string>
+    <string name="pane_resize">Zmień szerokość panelu</string>
+    <string name="pane_details">Panel szczegółów</string>
 </resources>
