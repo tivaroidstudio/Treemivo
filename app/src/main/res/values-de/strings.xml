@@ -158,4 +158,24 @@
     <string name="cleanup_ignore">Ignorieren</string>
     <string name="pane_resize">Detailansicht vergrößern oder verkleinern</string>
     <string name="pane_details">Details</string>
+    <string name="collections_title">Intelligente Sammlungen</string>
+    <string name="collections_scope">Gruppen basieren nur auf Metadaten zugänglicher indizierter Dateien.</string>
+    <string name="collections_back">Zurück</string>
+    <string name="collections_empty">Keine passenden Gruppen gefunden.</string>
+    <string name="collections_preview_limit">Bis zu 300 Dateien aus dieser Gruppe werden angezeigt.</string>
+    <string name="collections_not_duplicates">Ähnliche Dateinamen dienen der Übersicht, nicht als Nachweis von Duplikaten.</string>
+    <string name="collections_folders">Ordner</string>
+    <string name="collections_extensions">Endungen</string>
+    <string name="collections_years">Jahre</string>
+    <string name="collections_name_families">Namensgruppen</string>
+    <string name="collections_file_sizes">Dateigrößen</string>
+    <string name="collections_unknown_size">Größe unbekannt</string>
+    <string name="collections_empty_size">Leere Dateien</string>
+    <string name="collections_under_10mb">Unter 10 MB</string>
+    <string name="collections_10_100mb">10–100 MB</string>
+    <string name="collections_100mb_1gb">100 MB–1 GB</string>
+    <string name="collections_over_1gb">Ab 1 GB</string>
+    <string name="search_help_title">Erweiterte Suche</string>
+    <string name="search_help_description">Bedingungen kombinieren: type:video, ext:zip, size&gt;100MB, path:Download, after:2026-01-01. Phrasen in Anführungszeichen setzen; - schließt aus.</string>
+    <string name="search_invalid">Übersprungene Suchbegriffe</string>
 </resources>
