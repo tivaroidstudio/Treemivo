@@ -92,4 +92,25 @@
     <string name="pro_description">Unlock 30 saved scans and changes between scans. One-time Google Play purchase.</string>
     <string name="buy_pro">Unlock Pro</string>
     <string name="restore_purchases">Restore purchase</string>
+    <string name="cleanup_title">Smart Cleanup</string>
+    <string name="cleanup_explanation">Review suggestions first. Files are never deleted automatically.</string>
+    <string name="cleanup_big_videos">Large videos</string>
+    <string name="cleanup_old_downloads">Old downloads</string>
+    <string name="cleanup_installers">Installers</string>
+    <string name="similar_photos">Similar photos</string>
+    <string name="cleanup_pro_only">Available with Pro.</string>
+    <string name="analyze_similar">Find similar photos</string>
+    <string name="similar_disclaimer">Visual matches may not be duplicates. Review each photo before deletion.</string>
+    <string name="cleanup_review_only">to review, not guaranteed savings</string>
+    <string name="clear_selection">Clear selection</string>
+    <string name="cleanup_none">No files in this category.</string>
+    <string name="cleanup_trash_scope">Batch trash works for accessible indexed media on Android 11+. Other documents require individual review.</string>
+    <string name="move_selected_to_trash">Move selected to trash</string>
+    <string name="cleanup_confirm_batch">Review the selected files before Android\'s system trash confirmation:</string>
+    <string name="export_pdf">Export PDF report</string>
+    <string name="save_filter">Save filter</string>
+    <string name="filter_name">Preset name</string>
+    <string name="history_chart_label">Storage trend (selected source)</string>
+    <string name="zoom_hint">Pinch to zoom, drag to pan, double tap to reset.</string>
+    <string name="filter_saved_hint">Saved filters require Pro.</string>
 </resources>
