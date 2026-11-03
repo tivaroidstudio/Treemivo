@@ -108,6 +108,7 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
     var categoryFilter by rememberSaveable { mutableStateOf<FileKind?>(null) }
     var fileSort by rememberSaveable { mutableStateOf(FileSort.SIZE_DESC) }
     var last30Days by rememberSaveable { mutableStateOf(false) }
+    var extensionFilter by rememberSaveable { mutableStateOf<String?>(null) }
 
     val chooseTree = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) {
         if (it != null) vm.setTree(it)
@@ -162,7 +163,7 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
     val filteredFiles by produceState(
         initialValue = emptyList<FileRecord>(),
         vm.report, folderPath, search, minimumSize, maximumSize, categoryFilter,
-        fileSort, last30Days
+        fileSort, last30Days, extensionFilter
     ) {
         val allFiles = vm.report?.files.orEmpty()
         val options = AdvancedFilter(
@@ -178,7 +179,12 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
             val scoped = if (folderPath.isBlank()) allFiles else allFiles.filter {
                 it.relativePath.startsWith(folderPath + "/")
             }
-            filterFiles(scoped, options)
+            val filtered = filterFiles(scoped, options)
+            if (extensionFilter == null) filtered else filtered.filter { file ->
+                val ext = file.name.substringAfterLast('.', "").lowercase()
+                    .take(16).ifBlank { "(none)" }
+                ext == extensionFilter
+            }
         }
     }
 
@@ -256,6 +262,15 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
                                 onNavigate = onFolder, onToggleBookmark = vm::toggleBookmark
                             )
                         }
+                        if (extensionFilter != null) {
+                            FilterChip(
+                                selected = true,
+                                onClick = { extensionFilter = null },
+                                label = { Text("." + extensionFilter) },
+                                trailingIcon = { Icon(Icons.Outlined.Delete, null,
+                                    modifier = Modifier.size(15.dp)) }
+                            )
+                        }
                         if (vm.report == null) {
                             SelectFolderMessage(vm.busy, onChooseFolder, onScanMedia)
                         } else {
@@ -296,7 +311,9 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
                             modifier = Modifier.fillMaxSize(),
                             onChooseFolder = onChooseFolder,
                             onSelectFile = { selectedFile = it },
-                            onSelectFolder = onFolder
+                            onSelectFolder = onFolder,
+                            selectedExtension = extensionFilter,
+                            onExtension = { extensionFilter = it }
                         )
                     }
                 }
@@ -340,6 +357,13 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
                             onNavigate = onFolder, onToggleBookmark = vm::toggleBookmark
                         )
                     }
+                    if (extensionFilter != null) {
+                        FilterChip(
+                            selected = true, onClick = { extensionFilter = null },
+                            label = { Text("." + extensionFilter) },
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        )
+                    }
                     if (vm.report == null && section != Section.HISTORY) {
                         Box(Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {
                             SelectFolderMessage(vm.busy, onChooseFolder, onScanMedia)
@@ -381,7 +405,8 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
                             Spacer(Modifier.height(6.dp))
                             ContentForSection(
                                 section, vm, filteredFiles, folderPath, Modifier.fillMaxSize(),
-                                onChooseFolder, { selectedFile = it }, onFolder
+                                onChooseFolder, { selectedFile = it }, onFolder,
+                                extensionFilter, { extensionFilter = it }
                             )
                         }
                     }
@@ -826,7 +851,9 @@ private fun ContentForSection(
     modifier: Modifier,
     onChooseFolder: () -> Unit,
     onSelectFile: (FileRecord) -> Unit,
-    onSelectFolder: (String) -> Unit
+    onSelectFolder: (String) -> Unit,
+    selectedExtension: String?,
+    onExtension: (String?) -> Unit
 ) {
     val report = vm.report
     if (report == null && section != Section.HISTORY) {
@@ -930,11 +957,25 @@ private fun ContentForSection(
         }
         Section.TYPES -> {
             var chosenKind by remember { mutableStateOf<FileKind?>(null) }
-            val totals = files.groupBy { it.kind }.mapValues { (_, ff) -> ff.sumOf { it.sizeBytes } }
+            val totals by produceState(
+                initialValue = emptyMap<FileKind, Long>(), files
+            ) {
+                value = withContext(Dispatchers.Default) {
+                    files.groupBy { it.kind }.mapValues { (_, ff) -> ff.sumOf { it.sizeBytes } }
+                }
+            }
             LazyColumn(
                 modifier, contentPadding = PaddingValues(12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                item {
+                    StorageInsightsPanel(
+                        files = files,
+                        selectedExtension = selectedExtension,
+                        onExtension = onExtension,
+                        onFile = onSelectFile
+                    )
+                }
                 item {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(stringResource(R.string.types_title), Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
