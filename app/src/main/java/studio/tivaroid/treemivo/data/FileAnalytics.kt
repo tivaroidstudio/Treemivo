@@ -30,17 +30,15 @@ data class AdvancedFilter(
 )
 
 fun filterFiles(files: List<FileRecord>, filter: AdvancedFilter): List<FileRecord> {
+    // Parse query only once, not once per file in a 100k-item scan.
+    val plan = parseSearchQuery(filter.query)
     val result = files.asSequence()
         .filter { it.sizeBytes in filter.minSizeBytes..filter.maxSizeBytes }
         .filter { filter.kind == null || it.kind == filter.kind }
         .filter { !filter.onlyEmpty || (it.sizeKnown && it.sizeBytes == 0L) }
         .filter { !filter.onlyHidden || it.name.startsWith('.') }
         .filter { it.modifiedAtMillis >= filter.modifiedAfterMillis }
-        .filter {
-            filter.query.isBlank() ||
-                it.name.contains(filter.query, ignoreCase = true) ||
-                it.relativePath.contains(filter.query, ignoreCase = true)
-        }.toList()
+        .filter(plan::matches).toList()
     return when (filter.sort) {
         FileSort.SIZE_DESC -> result.sortedByDescending { it.sizeBytes }
         FileSort.SIZE_ASC -> result.sortedBy { it.sizeBytes }
