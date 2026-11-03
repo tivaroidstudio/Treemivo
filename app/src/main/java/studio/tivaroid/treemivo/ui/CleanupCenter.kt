@@ -59,7 +59,7 @@ fun CleanupCenter(vm: StorageViewModel, onDismiss: () -> Unit) {
                 else -> reviewCandidates(current, category, now).map { it.file }
             }
             candidates.distinctBy { it.uri.toString() }
-                .filterNot { vm.isIgnoredSuggestion(it) }
+                .filterNot { ignored.isNotEmpty() && vm.isIgnoredSuggestion(it) }
                 .sortedByDescending { it.sizeBytes }
         }
     }
