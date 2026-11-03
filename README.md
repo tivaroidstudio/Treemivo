@@ -93,3 +93,27 @@ Read `docs/RELEASE_CHECKLIST.md` and `docs/TESTING.md` before release.
 - **Translations:** new views and actions translated to Polish, English, German, Spanish and French.
 
 No background scanning, forecasting, automatic removal or unrestricted filesystem access is implemented. Charts show only user-authorized indexed data and changes in that same scope. Keep the PR in draft until final build, safety and device testing.
+
+
+## Treemivo v0.6 — advanced search, smart collections, tracked changes
+
+**Advanced offline search (Free)**
+
+Use search operators directly from the map or file screens:
+- `type:video size>500MB` — videos larger than 500 MiB
+- `ext:zip,7z path:Download` — archives in matching paths
+- `name:"holiday photos" -ext:tmp` — quoted phrase and exclusion
+- `after:2026-01-01 before:2026-11-01` — local-calendar modification date range
+- Plain text and up to 30 combined rules are supported. The search help panel provides examples; invalid terms are shown rather than deleting or modifying any files.
+
+**Smart Collections (Free)**
+
+A dedicated responsive browser groups only the current accessible indexed files by their first folder, extension, modification year, file-size band and numbered filename families such as `IMG_0001`, `IMG_0002`. Open a group to inspect filenames, preview or open an individual file through Android. Name families are **not** duplicate detection or advice to delete anything. Up to 120 collections and 300 listed members per group are displayed for usability.
+
+**Additional Pro value**
+
+- Saved advanced filter presets retain the user's query expressions along with existing size, date, type, extension, empty/hidden switches. Search phrases may contain sensitive filenames and are stored locally in app-private preferences.
+- The History panel shows verified size changes for previously tracked URI identities among the 200 largest accessible files in matching complete scans. Histories store only keyed HMAC digests and sizes, **not** filenames, paths or file contents. Changes only appear when the same URI is tracked in both samples; other changes are not claimed to be new or deleted files.
+- The sampling limit reduces local history storage overhead; it is not intended to be a complete file change journal.
+
+**Not yet tested:** Android/Gradle build, UI interactions, large inventories, photo/SAF permissions, billed Pro purchases and device-specific providers. These remain in the deferred release verification checklist.
