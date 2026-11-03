@@ -13,7 +13,7 @@ Treemivo is a storage explorer with a real file-size treemap, source-aware repor
 - **Advanced filters:** name/path search, 100MB/1GB lower bounds, 1GB upper bound, file types, last 30 days, sort by size, filename or modified date. Heavy sorting and folder summaries run off the UI thread.
 - **Exact duplicates:** candidates grouped by size and checked with SHA-256 on demand, cancelable with progress.
 - **Safe disposal:** Android 11+ indexed media goes to the system trash only after in-app confirmation AND Android's own system approval. SAF documents may be permanently deleted only after an explicit irreversible-action warning; providers may refuse the action. There is no automatic/bulk deletion.
-- **History:** aggregate-only scan summaries, most recent 3 free / last 30 with Pro. Pro also displays comparisons to older scans of the same source.
+- **History:** aggregate-only scan summaries plus HMAC-pseudonymized top-folder sizes, most recent 3 free / last 30 with Pro. Pro also displays comparisons to older scans of the same source.
 - **Pro billing:** Google Play Billing 9.1.0 one-time product ID `treemivo_pro_lifetime`. No hardcoded Pro toggle. A real product must be configured in Play Console and tested before launch.
 - **Localization:** English, Polish, German, Spanish and French through `res/values-*/strings.xml`; locale selection uses Android's app language settings on Android 13+.
 - No app network permission, telemetry, advertising SDK, or automatic uploads.
