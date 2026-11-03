@@ -3,15 +3,22 @@ package studio.tivaroid.treemivo.ui
 import android.graphics.Paint
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import studio.tivaroid.treemivo.data.FileKind
@@ -42,22 +49,61 @@ fun TreemapView(
 ) {
     val tiles = remember(files) { buildTreemap(files, { it.sizeBytes }) }
     val scale = LocalDensity.current.density
+    var zoom by remember(files) { mutableFloatStateOf(1f) }
+    var pan by remember(files) { mutableStateOf(Offset.Zero) }
+    fun clamp(value: Offset, zoomValue: Float, width: Float, height: Float) = Offset(
+        value.x.coerceIn(-width * (zoomValue - 1f), 0f),
+        value.y.coerceIn(-height * (zoomValue - 1f), 0f)
+    )
     val paint = remember {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = android.graphics.Color.WHITE
             typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
         }
     }
-    Canvas(modifier = modifier.pointerInput(tiles) {
-        detectTapGestures { tap ->
-            val x = if (size.width > 0) tap.x / size.width else -1f
-            val y = if (size.height > 0) tap.y / size.height else -1f
-            tiles.firstOrNull {
-                x >= it.x && x < it.x + it.width && y >= it.y && y < it.y + it.height
-            }?.let { onSelect(it.item) }
+    Canvas(modifier = modifier
+        .pointerInput(tiles) {
+            detectTransformGestures { centroid, panChange, zoomChange, _ ->
+                val next = (zoom * zoomChange).coerceIn(1f, 8f)
+                val ratio = next / zoom
+                pan = clamp(
+                    Offset(
+                        pan.x + panChange.x + (centroid.x - pan.x) * (1f - ratio),
+                        pan.y + panChange.y + (centroid.y - pan.y) * (1f - ratio)
+                    ), next, size.width.toFloat(), size.height.toFloat()
+                )
+                zoom = next
+            }
         }
-    }) {
+        .pointerInput(tiles) {
+            detectTapGestures(
+                onDoubleTap = { tap ->
+                    if (zoom > 1.02f) {
+                        zoom = 1f
+                        pan = Offset.Zero
+                    } else {
+                        zoom = 2.5f
+                        pan = clamp(
+                            Offset(tap.x * (1f - zoom), tap.y * (1f - zoom)),
+                            zoom, size.width.toFloat(), size.height.toFloat()
+                        )
+                    }
+                },
+                onTap = { tap ->
+                    val x = if (size.width > 0) (tap.x - pan.x) / zoom / size.width else -1f
+                    val y = if (size.height > 0) (tap.y - pan.y) / zoom / size.height else -1f
+                    tiles.firstOrNull {
+                        x >= it.x && x < it.x + it.width && y >= it.y && y < it.y + it.height
+                    }?.let { onSelect(it.item) }
+                }
+            )
+        }) {
         drawRect(TreemivoBackground)
+        clipRect {
+            withTransform({
+                translate(pan.x, pan.y)
+                scale(zoom, pivot = Offset.Zero)
+            }) {
         for ((index, tile) in tiles.withIndex()) {
             val left = tile.x * size.width
             val top = tile.y * size.height
@@ -89,6 +135,8 @@ fun TreemapView(
                     left + 8f * scale, top + 20f * scale, paint
                 )
             }
+        }
+              }
         }
     }
 }
