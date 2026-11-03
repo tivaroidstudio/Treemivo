@@ -7,6 +7,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.res.stringResource
+import studio.tivaroid.treemivo.R
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Path
@@ -23,7 +25,7 @@ fun HistoryTrendChart(snapshots: List<ScanSnapshot>) {
     }
     Column(Modifier.fillMaxWidth().background(TreemivoSurface, RoundedCornerShape(14.dp))
         .padding(12.dp)) {
-        Text("Storage trend · indexed source", fontSize = 12.sp, color = TreemivoMuted)
+        Text(stringResource(R.string.history_chart_label), fontSize = 12.sp, color = TreemivoMuted)
         Spacer(Modifier.height(8.dp))
         Canvas(Modifier.fillMaxWidth().height(108.dp)) {
             if (series.size < 2) return@Canvas
