@@ -120,6 +120,7 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
     var extensionFilter by rememberSaveable { mutableStateOf<String?>(null) }
     var onlyEmpty by rememberSaveable { mutableStateOf(false) }
     var onlyHidden by rememberSaveable { mutableStateOf(false) }
+    var desktopPaneWidth by rememberSaveable { mutableFloatStateOf(350f) }
     val searchFocus = remember { FocusRequester() }
     var searchFocusPending by remember { mutableStateOf(false) }
     LaunchedEffect(section, searchFocusPending) {
@@ -239,6 +240,13 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
         // This adapts to the current WINDOW size, not the phone model. DeX and
         // Android desktop windowing can resize the activity at runtime.
         val expanded = maxWidth >= 900.dp
+        val paneMin = 260.dp
+        val paneMax = (maxWidth - 210.dp - 18.dp - 330.dp)
+            .coerceIn(paneMin, 520.dp)
+        val paneWidth = desktopPaneWidth.dp.coerceIn(paneMin, paneMax)
+        val changePane: (Dp) -> Unit = {
+            desktopPaneWidth = it.coerceIn(paneMin, paneMax).value
+        }
         Scaffold(
             containerColor = TreemivoBackground,
             bottomBar = {
@@ -346,14 +354,22 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
                             Text(stringResource(R.string.tap_map_hint), color = TreemivoMuted, fontSize = 13.sp)
                         }
                     }
+                    DesktopPaneResize(
+                        width = paneWidth, minWidth = paneMin, maxWidth = paneMax,
+                        onWidth = changePane
+                    )
                     Column(
-                        Modifier.width(350.dp).fillMaxHeight().background(TreemivoPanel)
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        Modifier.width(paneWidth).fillMaxHeight().background(TreemivoPanel)
+                            .padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
+                        DesktopPaneWidthButtons(paneWidth, paneMin, paneMax, changePane)
                         if (selectedFile != null) {
-                            FileDetailsCard(selectedFile!!, context, Modifier.fillMaxWidth(), vm.billing.isPro) {
-                                confirmRemoval = selectedFile
+                            Column(Modifier.fillMaxWidth().heightIn(max = 290.dp)
+                                .verticalScroll(rememberScrollState())) {
+                                FileDetailsCard(selectedFile!!, context, Modifier.fillMaxWidth(), vm.billing.isPro) {
+                                    confirmRemoval = selectedFile
+                                }
                             }
                         }
                         Text(
@@ -960,8 +976,11 @@ private fun ContentForSection(
             LazyColumn(modifier, contentPadding = PaddingValues(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 item { Text(stringResource(R.string.scan_history), fontWeight = FontWeight.SemiBold) }
-                if (rows.isNotEmpty()) {
-                    item { HistoryTrendChart(rows) }
+                item { StorageGrowthPanel(vm.latestGrowth(), vm.billing.isPro) }
+                val comparable = vm.comparableSnapshots()
+                    .take(if (vm.billing.isPro) 30 else 3)
+                if (comparable.isNotEmpty()) {
+                    item { HistoryTrendChart(comparable) }
                 }
                 items(rows) { snap ->
                     Surface(color = TreemivoSurface, shape = RoundedCornerShape(12.dp)) {
