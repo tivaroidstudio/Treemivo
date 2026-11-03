@@ -148,7 +148,7 @@ fun parseSearchQuery(query: String): SearchPlan {
                     "ext" -> operand.split(',').map { it.trim().removePrefix(".").lowercase(Locale.ROOT) }
                         .filter { it.isNotBlank() }.takeIf { it.isNotEmpty() }
                         ?.let { SearchMatcher.Extension(it.toSet()) }
-                    "type" -> kinds[operand.lowercase(Locale.ROOT)]?.let(SearchMatcher::Kind)
+                    "type" -> kinds[operand.lowercase(Locale.ROOT)]?.let { SearchMatcher.Kind(it) }
                     "name" -> operand.takeIf { it.isNotEmpty() }?.let(SearchMatcher::Name)
                     "path", "in" -> operand.takeIf { it.isNotEmpty() }?.let(SearchMatcher::Path)
                     "after", "before" -> {
