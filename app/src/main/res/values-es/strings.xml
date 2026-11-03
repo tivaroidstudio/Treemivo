@@ -144,4 +144,18 @@
     <string name="share_file">Compartir archivo</string>
     <string name="filter_empty_only">Solo archivos vacíos</string>
     <string name="filter_hidden_only">Solo archivos ocultos</string>
+    <string name="growth_title">Crecimiento del almacenamiento</string>
+    <string name="growth_not_comparable">Realiza dos análisis completos de la misma fuente autorizada para comparar cambios.</string>
+    <string name="growth_file_difference">Cambio en la cantidad de archivos</string>
+    <string name="growth_days">días entre análisis</string>
+    <string name="growth_by_type">Cambio por tipo de archivo</string>
+    <string name="growth_pro_note">El desglose por tipo de archivo está disponible en Pro.</string>
+    <string name="growth_scope_note">Solo se comparan archivos accesibles con el mismo alcance autorizado. Un cambio de tamaño no identifica qué archivo cambió.</string>
+    <string name="cleanup_screenshots">Capturas de pantalla</string>
+    <string name="cleanup_backups">Archivos con formato de copia</string>
+    <string name="cleanup_empty_files">Archivos vacíos</string>
+    <string name="cleanup_restore_ignored">Mostrar sugerencias ignoradas</string>
+    <string name="cleanup_ignore">Ignorar</string>
+    <string name="pane_resize">Cambiar tamaño del panel</string>
+    <string name="pane_details">Detalles</string>
 </resources>
