@@ -92,4 +92,25 @@
     <string name="pro_description">Desbloquea 30 análisis guardados y comparaciones. Compra única en Google Play.</string>
     <string name="buy_pro">Comprar Pro</string>
     <string name="restore_purchases">Restaurar compra</string>
+    <string name="cleanup_title">Smart Cleanup</string>
+    <string name="cleanup_explanation">Revisa las sugerencias primero. Nunca se eliminan archivos automáticamente.</string>
+    <string name="cleanup_big_videos">Vídeos grandes</string>
+    <string name="cleanup_old_downloads">Descargas antiguas</string>
+    <string name="cleanup_installers">Instaladores</string>
+    <string name="similar_photos">Fotos similares</string>
+    <string name="cleanup_pro_only">Disponible con Pro.</string>
+    <string name="analyze_similar">Buscar fotos similares</string>
+    <string name="similar_disclaimer">Las fotos parecidas no siempre son duplicados. Revisa cada una.</string>
+    <string name="cleanup_review_only">para revisar, ahorro no garantizado</string>
+    <string name="clear_selection">Borrar selección</string>
+    <string name="cleanup_none">No hay archivos en esta categoría.</string>
+    <string name="cleanup_trash_scope">La papelera por lotes solo funciona con medios indexados accesibles desde Android 11. Otros archivos requieren revisión individual.</string>
+    <string name="move_selected_to_trash">Mover selección a papelera</string>
+    <string name="cleanup_confirm_batch">Revisa los archivos antes de la confirmación del sistema:</string>
+    <string name="export_pdf">Exportar informe PDF</string>
+    <string name="save_filter">Guardar filtro</string>
+    <string name="filter_name">Nombre del filtro</string>
+    <string name="history_chart_label">Evolución del almacenamiento (fuente seleccionada)</string>
+    <string name="zoom_hint">Pellizca para ampliar, arrastra para mover, toca dos veces para reiniciar.</string>
+    <string name="filter_saved_hint">Los filtros guardados requieren Pro.</string>
 </resources>
