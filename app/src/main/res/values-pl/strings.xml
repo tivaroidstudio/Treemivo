@@ -158,4 +158,24 @@
     <string name="cleanup_ignore">Ignoruj</string>
     <string name="pane_resize">Zmień szerokość panelu</string>
     <string name="pane_details">Panel szczegółów</string>
+    <string name="collections_title">Inteligentne kolekcje</string>
+    <string name="collections_scope">Grupowanie dotyczy tylko dostępnych, zaindeksowanych plików i ich metadanych.</string>
+    <string name="collections_back">Wstecz</string>
+    <string name="collections_empty">Brak pasujących kolekcji.</string>
+    <string name="collections_preview_limit">Wyświetlam maksymalnie 300 plików z tej grupy.</string>
+    <string name="collections_not_duplicates">Podobne nazwy służą do przeglądania plików, nie potwierdzają duplikatów.</string>
+    <string name="collections_folders">Foldery</string>
+    <string name="collections_extensions">Rozszerzenia</string>
+    <string name="collections_years">Lata</string>
+    <string name="collections_name_families">Serie nazw</string>
+    <string name="collections_file_sizes">Rozmiary plików</string>
+    <string name="collections_unknown_size">Nieznany rozmiar</string>
+    <string name="collections_empty_size">Puste pliki</string>
+    <string name="collections_under_10mb">Poniżej 10 MB</string>
+    <string name="collections_10_100mb">10–100 MB</string>
+    <string name="collections_100mb_1gb">100 MB–1 GB</string>
+    <string name="collections_over_1gb">Od 1 GB</string>
+    <string name="search_help_title">Zaawansowane wyszukiwanie</string>
+    <string name="search_help_description">Łącz warunki: type:video, ext:zip, size&gt;100MB, path:Download, after:2026-01-01. Frazy ujmij w cudzysłów, a znak - wyklucza warunek.</string>
+    <string name="search_invalid">Pominięte warunki wyszukiwania</string>
 </resources>
