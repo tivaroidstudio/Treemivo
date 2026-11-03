@@ -80,3 +80,16 @@ Build stack: Gradle 8.13, Android Gradle Plugin 8.12.3, Kotlin 2.3.21, compile/t
 5. Do not sell features until backend/payment QA and Google Play compliance checks are complete.
 
 Read `docs/RELEASE_CHECKLIST.md` and `docs/TESTING.md` before release.
+
+
+## Treemivo v0.5 — growth insights, review intelligence and DeX controls
+
+- **Scope-aware growth insights (Free basic / Pro detailed):** compare consecutive complete scans only if the authorized SAF folder set or MediaStore permission scope is identical. Show indexed-byte and file-count deltas; Pro breaks changes down by file type. Old/partial/incompatible history is deliberately not compared.
+- **Privacy-preserving history:** persist aggregate file-type bytes, scan completeness and a keyed fingerprint of the scan scope, in addition to previously hashed folder totals. Existing history is read safely but is not treated as comparable until new compatible scans exist.
+- **Smarter Smart Cleanup suggestions (Free):** optional review groups for screenshots, backup-like file extensions, and truly zero-byte files, in addition to the existing large-video and installer views. Metadata suggestions are not duplicate detection or an instruction to delete anything.
+- **Ignore and restore suggestions:** per-file user choice stored locally as a keyed HMAC of URI, size and modification timestamp, without retaining raw paths. Changed files can reappear. Users can restore ignored suggestions.
+- **Provider size reliability:** unknown file sizes are now distinguished from confirmed zero-byte files. A 0-byte placeholder with no size metadata must not be advertised as an empty file.
+- **DeX inspector:** adjustable 260–520 dp (depending on available window width) details pane with a draggable splitter and on-screen +/− width controls, keeping a minimum width for the treemap.
+- **Translations:** new views and actions translated to Polish, English, German, Spanish and French.
+
+No background scanning, forecasting, automatic removal or unrestricted filesystem access is implemented. Charts show only user-authorized indexed data and changes in that same scope. Keep the PR in draft until final build, safety and device testing.
