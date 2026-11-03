@@ -14,7 +14,10 @@ data class ScanSnapshot(
     val count: Int,
     val bytes: Long,
     val largest: Long,
-    val folderSizes: Map<String, Long> = emptyMap()
+    val folderSizes: Map<String, Long> = emptyMap(),
+    val scopeKey: String = "",
+    val partial: Boolean = true,
+    val typeBytes: Map<String, Long> = emptyMap()
 )
 
 data class FolderChange(
@@ -40,35 +43,56 @@ class ScanHistory(context: Context) {
             .take(16).joinToString("") { "%02x".format(it) }
     }
 
+    /**
+     * HMAC-based fingerprint of the authorized sources (never exposes raw folder URIs).
+     * A different grant set produces a different fingerprint, preventing false trends.
+     */
+    fun scopeKey(source: String, grants: List<String>): String =
+        digest("source=" + source + "|grants=" + grants.sorted().joinToString("|"))
+
     fun entries(): List<ScanSnapshot> = try {
         val array = JSONArray(prefs.getString("entries", "[]"))
         (0 until array.length()).map { i ->
             val item = array.getJSONObject(i)
             val folderData = item.optJSONObject("folders")
             val keys = folderData?.keys()?.asSequence()?.toList().orEmpty()
+            val kinds = item.optJSONObject("types")
+            val kindNames = kinds?.keys()?.asSequence()?.toList().orEmpty()
             ScanSnapshot(
                 time = item.getLong("time"),
                 source = item.getString("source"),
                 count = item.getInt("count"),
                 bytes = item.getLong("bytes"),
                 largest = item.getLong("largest"),
-                folderSizes = keys.associateWith { folderData!!.getLong(it) }
+                folderSizes = keys.associateWith { folderData!!.getLong(it) },
+                scopeKey = item.optString("scope", ""),
+                partial = item.optBoolean("partial", true),
+                typeBytes = kindNames.associateWith { kinds!!.optLong(it, 0L) }
             )
         }
     } catch (_: Exception) { emptyList() }
 
     @Synchronized
-    fun record(source: String, report: StorageReport) {
+    fun record(source: String, report: StorageReport, grants: List<String>) {
+        val breakdown = FileKind.entries.associate { kind ->
+            kind.name to report.files.asSequence().filter { it.kind == kind }
+                .sumOf { it.sizeBytes }
+        }
         val summary = ScanSnapshot(
             System.currentTimeMillis(), source, report.files.size,
             report.totalBytes, report.files.maxOfOrNull { it.sizeBytes } ?: 0L,
             report.folders.sortedByDescending { it.sizeBytes }.take(50)
-                .associate { digest(it.relativePath) to it.sizeBytes }
+                .associate { digest(it.relativePath) to it.sizeBytes },
+            scopeKey = scopeKey(source, grants),
+            partial = report.partial,
+            typeBytes = breakdown
         )
         val array = JSONArray()
         (listOf(summary) + entries()).take(30).forEach { snapshot ->
             val folders = JSONObject()
             snapshot.folderSizes.forEach { (key, size) -> folders.put(key, size) }
+            val types = JSONObject()
+            snapshot.typeBytes.forEach { (key, bytes) -> types.put(key, bytes) }
             array.put(JSONObject().apply {
                 put("time", snapshot.time)
                 put("source", snapshot.source)
@@ -76,6 +100,9 @@ class ScanHistory(context: Context) {
                 put("bytes", snapshot.bytes)
                 put("largest", snapshot.largest)
                 put("folders", folders)
+                put("types", types)
+                put("scope", snapshot.scopeKey)
+                put("partial", snapshot.partial)
             })
         }
         prefs.edit().putString("entries", array.toString()).apply()
@@ -85,7 +112,14 @@ class ScanHistory(context: Context) {
      * Shows only currently accessible top folders. Missing/renamed folders
      * are not attributed to an arbitrary path.
      */
-    fun compare(snapshot: ScanSnapshot, current: StorageReport): List<FolderChange> {
+    fun compare(
+        snapshot: ScanSnapshot,
+        current: StorageReport,
+        currentScopeKey: String
+    ): List<FolderChange> {
+        if (snapshot.partial || current.partial ||
+            snapshot.scopeKey.isBlank() || snapshot.scopeKey != currentScopeKey
+        ) return emptyList()
         return current.folders.take(50).mapNotNull { folder ->
             val old = snapshot.folderSizes[digest(folder.relativePath)] ?: return@mapNotNull null
             FolderChange(folder.relativePath, old, folder.sizeBytes)
