@@ -22,7 +22,10 @@ class IgnoredReviewStore(context: Context) {
     fun token(file: FileRecord): String {
         val mac = Mac.getInstance("HmacSHA256")
         mac.init(SecretKeySpec(secret.toByteArray(Charsets.UTF_8), "HmacSHA256"))
-        val bytes = mac.doFinal(file.uri.toString().toByteArray(Charsets.UTF_8))
+        // If the file changes, it can appear for review again.
+        val fingerprint = file.uri.toString() + "|" +
+            file.sizeBytes.toString() + "|" + file.modifiedAtMillis.toString()
+        val bytes = mac.doFinal(fingerprint.toByteArray(Charsets.UTF_8))
         return bytes.take(16).joinToString("") { "%02x".format(it) }
     }
 
