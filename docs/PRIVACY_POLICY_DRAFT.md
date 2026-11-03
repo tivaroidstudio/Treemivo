@@ -20,3 +20,7 @@ Before publishing, replace this draft with a public policy including support con
 
 ### New offline processing (development)
 With a deliberate user action, Treemivo may load bounded photo thumbnails to calculate perceptual similarity hashes, preview a media/PDF/text file, or temporarily copy a ZIP file (up to 32 MB) into app-private cache to read its index without extracting contents. Temporary ZIP files are deleted after inspection. These are local operations. Pro history may retain truncated HMAC-protected folder identifiers and aggregate sizes in private app storage to compare scans; no raw folder paths are persisted in history. Users can clear scan summaries from the app.
+
+### Growth trends and ignored cleanup suggestions (development)
+
+The app locally stores aggregate bytes by file type and a pseudonymous, keyed fingerprint of granted scan sources to avoid comparing unrelated or incomplete scans. It does not store raw scanned folder URIs in scan history. Ignore decisions for Smart Cleanup are stored as keyed digests of document URIs plus size and modification metadata; raw file paths are not persisted for these ignore choices. These values are not uploaded. Users can clear scan history or restore ignored cleanup suggestions from within the app. Different source permissions may make earlier scan snapshots incomparable.
