@@ -101,6 +101,7 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
     var selectedFile by remember { mutableStateOf<FileRecord?>(null) }
     var search by rememberSaveable { mutableStateOf("") }
     var settingsOpen by remember { mutableStateOf(false) }
+    var cleanupOpen by remember { mutableStateOf(false) }
     var confirmRemoval by remember { mutableStateOf<FileRecord?>(null) }
     var minimumSize by rememberSaveable { mutableLongStateOf(0L) }
     var maximumSize by rememberSaveable { mutableLongStateOf(Long.MAX_VALUE) }
@@ -120,6 +121,9 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
     val exportCsv = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("text/csv")
     ) { if (it != null) vm.exportCsv(it) }
+    val exportPdf = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/pdf")
+    ) { if (it != null) vm.exportPdf(it) }
 
     LaunchedEffect(vm.report) {
         folderPath = ""
@@ -229,12 +233,22 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
                             enabled = vm.report != null
                         )
                         SpaceOverview(vm.deviceSpace)
-                        SourceSelector(vm, onChooseFolder, onScanMedia)
+                        SourceSelector(vm, onChooseFolder, onScanMedia, { cleanupOpen = true })
                         FilterStrip(
                             minimumSize, { minimumSize = it }, maximumSize, { maximumSize = it },
                             categoryFilter, { categoryFilter = it }, fileSort, { fileSort = it },
                             last30Days, { last30Days = it }
                         )
+                        SavedFiltersRow(vm, {
+                            vm.saveFilter(SavedFilter(it, minimumSize, maximumSize,
+                                categoryFilter, last30Days, fileSort))
+                        }, { preset ->
+                            minimumSize = preset.minSize
+                            maximumSize = preset.maxSize
+                            categoryFilter = preset.kind
+                            last30Days = preset.recentOnly
+                            fileSort = preset.sort
+                        })
                         SelectedFolderCard(vm.report, vm.busy, folderPath, onChooseFolder, vm::refresh, { folderPath = "" })
                         if (vm.report == null) {
                             SelectFolderMessage(vm.busy, onChooseFolder, onScanMedia)
@@ -290,12 +304,23 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
                     )
                     SpaceOverview(vm.deviceSpace, Modifier.padding(horizontal = 16.dp))
                     Spacer(Modifier.height(10.dp))
-                    SourceSelector(vm, onChooseFolder, onScanMedia, Modifier.padding(horizontal = 16.dp))
+                    SourceSelector(vm, onChooseFolder, onScanMedia,
+                        { cleanupOpen = true }, Modifier.padding(horizontal = 16.dp))
                     FilterStrip(
                         minimumSize, { minimumSize = it }, maximumSize, { maximumSize = it },
                         categoryFilter, { categoryFilter = it }, fileSort, { fileSort = it },
                         last30Days, { last30Days = it }
                     )
+                    SavedFiltersRow(vm, {
+                        vm.saveFilter(SavedFilter(it, minimumSize, maximumSize,
+                            categoryFilter, last30Days, fileSort))
+                    }, { preset ->
+                        minimumSize = preset.minSize
+                        maximumSize = preset.maxSize
+                        categoryFilter = preset.kind
+                        last30Days = preset.recentOnly
+                        fileSort = preset.sort
+                    })
                     SelectedFolderCard(
                         vm.report, vm.busy, folderPath, onChooseFolder, vm::refresh,
                         { folderPath = "" }, Modifier.padding(horizontal = 16.dp)
@@ -409,6 +434,7 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
             }
         )
     }
+    if (cleanupOpen) CleanupCenter(vm) { cleanupOpen = false }
     vm.errorMessage?.let { error ->
         AlertDialog(
             onDismissRequest = vm::clearError,
@@ -440,6 +466,14 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
                     }
                     HorizontalDivider()
                     Text(stringResource(R.string.pro_title), fontWeight = FontWeight.SemiBold)
+                    if (vm.billing.isPro && vm.report != null) {
+                        OutlinedButton(onClick = {
+                            settingsOpen = false
+                            exportPdf.launch("treemivo-report.pdf")
+                        }) {
+                            Text(stringResource(R.string.export_pdf))
+                        }
+                    }
                     Text(stringResource(
                         if (vm.billing.isPro) R.string.pro_active else R.string.pro_description
                     ))
@@ -648,6 +682,7 @@ private fun FileDetailsCard(
             Text(file.name, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Text(stringResource(R.string.size) + ": " + formatBytes(file.sizeBytes), color = TreemivoMuted)
             Text(stringResource(R.string.path) + ": " + file.relativePath, color = TreemivoMuted, fontSize = 12.sp)
+            FilePreview(file)
             TextButton(onClick = { openDocument(context, file) }) {
                 Icon(Icons.Outlined.OpenInNew, null)
                 Spacer(Modifier.width(6.dp))
@@ -743,6 +778,9 @@ private fun ContentForSection(
             LazyColumn(modifier, contentPadding = PaddingValues(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 item { Text(stringResource(R.string.scan_history), fontWeight = FontWeight.SemiBold) }
+                if (rows.isNotEmpty()) {
+                    item { HistoryTrendChart(rows) }
+                }
                 items(rows) { snap ->
                     Surface(color = TreemivoSurface, shape = RoundedCornerShape(12.dp)) {
                         Column(Modifier.fillMaxWidth().padding(14.dp)) {
@@ -751,6 +789,15 @@ private fun ContentForSection(
                             Text(stringResource(if (snap.source == ScanOrigin.MEDIA.name) R.string.scan_media else R.string.saved_folders) + " • " + snap.count + " " +
                                 stringResource(R.string.files_count).lowercase())
                             Text(formatBytes(snap.bytes), color = TreemivoAccent)
+                            if (vm.billing.isPro && snap.source == vm.origin.name) {
+                                val changes = vm.folderChanges(snap).take(5)
+                                changes.forEach { change ->
+                                    Text(change.currentPath.substringAfterLast('/') + "  " +
+                                        (if (change.delta > 0) "+" else "") +
+                                        formatSignedBytes(change.delta),
+                                        color = TreemivoMuted, fontSize = 11.sp)
+                                }
+                            }
                             if (vm.billing.isPro) {
                                 val old = vm.history.dropWhile { it.time >= snap.time }
                                     .firstOrNull { it.source == snap.source }
@@ -963,6 +1010,7 @@ private fun SourceSelector(
     vm: StorageViewModel,
     addFolder: () -> Unit,
     scanMedia: () -> Unit,
+    onCleanup: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier.fillMaxWidth()) {
@@ -978,6 +1026,9 @@ private fun SourceSelector(
             TextButton(onClick = addFolder) {
                 Icon(Icons.Outlined.FolderOpen, null)
                 Text(stringResource(R.string.add_folder))
+            }
+            Button(onClick = onCleanup, enabled = vm.report != null) {
+                Text(stringResource(R.string.cleanup_title))
             }
             if (vm.busy) TextButton(onClick = vm::cancelScan) {
                 Text(stringResource(R.string.cancel_scan))
@@ -1034,3 +1085,59 @@ private fun FilterStrip(
 
 private fun formatSignedBytes(value: Long): String =
     if (value < 0L) "-" + formatBytes(-value) else formatBytes(value)
+
+@Composable
+private fun SavedFiltersRow(
+    vm: StorageViewModel,
+    onSave: (String) -> Unit,
+    onApply: (SavedFilter) -> Unit
+) {
+    var dialogOpen by remember { mutableStateOf(false) }
+    var name by remember { mutableStateOf("") }
+    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
+        .padding(horizontal = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(7.dp),
+        verticalAlignment = Alignment.CenterVertically) {
+        if (vm.billing.isPro) {
+            TextButton(onClick = { name = ""; dialogOpen = true }) {
+                Text(stringResource(R.string.save_filter))
+            }
+            vm.savedFilters.forEach { filter ->
+                InputChip(
+                    selected = false,
+                    onClick = { onApply(filter) },
+                    label = { Text(filter.name) },
+                    trailingIcon = {
+                        IconButton(onClick = { vm.removeFilter(filter.name) },
+                            modifier = Modifier.size(26.dp)) {
+                            Icon(Icons.Outlined.Delete, contentDescription = null,
+                                modifier = Modifier.size(16.dp))
+                        }
+                    }
+                )
+            }
+        }
+    }
+    if (dialogOpen) AlertDialog(
+        onDismissRequest = { dialogOpen = false },
+        title = { Text(stringResource(R.string.save_filter)) },
+        text = {
+            OutlinedTextField(value = name, onValueChange = { name = it.take(40) },
+                label = { Text(stringResource(R.string.filter_name)) },
+                singleLine = true)
+        },
+        dismissButton = {
+            TextButton(onClick = { dialogOpen = false }) {
+                Text(stringResource(R.string.cancel_scan))
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                if (name.isNotBlank()) {
+                    onSave(name.trim())
+                    dialogOpen = false
+                }
+            }, enabled = name.isNotBlank()) { Text(stringResource(R.string.save_filter)) }
+        }
+    )
+}
