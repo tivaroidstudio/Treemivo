@@ -21,10 +21,12 @@ class FolderHistoryComparisonTest {
         history.clear()
         val before = listOf(file("DCIM/Camera/secret.jpg", 100))
         val after = listOf(file("DCIM/Camera/secret.jpg", 150))
-        history.record("MEDIA", StorageReport("MediaStore", before, folderBreakdown(before), false))
+        history.record("MEDIA", StorageReport("MediaStore", before, folderBreakdown(before), false),
+            listOf("READ_MEDIA_IMAGES"))
         val old = history.entries().first()
         val comparison = history.compare(old,
-            StorageReport("MediaStore", after, folderBreakdown(after), false))
+            StorageReport("MediaStore", after, folderBreakdown(after), false),
+            history.scopeKey("MEDIA", listOf("READ_MEDIA_IMAGES")))
         assertTrue(comparison.any { it.currentPath == "DCIM/Camera" && it.delta == 50L })
         val json = app.getSharedPreferences("treemivo_history", 0)
             .getString("entries", "") ?: ""
