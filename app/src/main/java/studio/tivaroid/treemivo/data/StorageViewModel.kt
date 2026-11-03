@@ -298,6 +298,20 @@ class StorageViewModel(app: Application) : AndroidViewModel(app) {
         similarBusy = false
     }
 
+    fun exportJson(destination: Uri) {
+        if (!billing.isPro) return
+        val snapshot = report ?: return
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                JsonScanExport.write(context, destination, snapshot)
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    errorMessage = e.localizedMessage ?: e.javaClass.simpleName
+                }
+            }
+        }
+    }
+
     fun exportPdf(destination: Uri) {
         if (!billing.isPro) return
         val snapshot = report ?: return
