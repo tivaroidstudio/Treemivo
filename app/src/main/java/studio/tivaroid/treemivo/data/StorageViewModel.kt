@@ -29,6 +29,7 @@ class StorageViewModel(app: Application) : AndroidViewModel(app) {
     private val historyStore = ScanHistory(app)
     private val filterStore = FilterPresets(app)
     private val bookmarkStore = FolderBookmarks(app)
+    private val ignoredReviewStore = IgnoredReviewStore(app)
     private val photoAnalyzer = PhotoSimilarityAnalyzer(app.contentResolver)
     val billing = ProBilling(app)
     private var scanJob: Job? = null
@@ -48,6 +49,8 @@ class StorageViewModel(app: Application) : AndroidViewModel(app) {
     var report by mutableStateOf<StorageReport?>(null)
         private set
     var history by mutableStateOf(historyStore.entries())
+        private set
+    var ignoredReviewTokens by mutableStateOf(ignoredReviewStore.ignoredTokens())
         private set
     var folderBookmarks by mutableStateOf(bookmarkStore.load())
         private set
@@ -246,6 +249,26 @@ class StorageViewModel(app: Application) : AndroidViewModel(app) {
         scanGeneration++
         scanJob?.cancel()
         busy = false
+    }
+
+    fun isIgnoredSuggestion(file: FileRecord): Boolean =
+        ignoredReviewStore.token(file) in ignoredReviewTokens
+
+    fun ignoreSuggestion(file: FileRecord) {
+        ignoredReviewStore.ignore(file)
+        ignoredReviewTokens = ignoredReviewStore.ignoredTokens()
+    }
+
+    fun restoreAllSuggestions() {
+        ignoredReviewStore.restoreAll()
+        ignoredReviewTokens = emptySet()
+    }
+
+    fun comparableSnapshots(): List<ScanSnapshot> {
+        val scope = currentScopeKey()
+        return history.filter {
+            it.source == origin.name && it.scopeKey == scope && !it.partial
+        }
     }
 
     fun isBookmarked(path: String): Boolean =
