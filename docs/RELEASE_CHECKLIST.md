@@ -44,3 +44,14 @@ These checks are not automatically satisfied by a successful code commit.
 - [ ] Verify locale behavior and layout of new dialogs, charts, filter presets and PDF export.
 - [ ] Test snapshot HMAC comparisons across app relaunches and after clearing scan history.
 - [ ] Validate Pro billing product in Google Play internal testing and verify entitlements securely before public paid launch.
+
+
+## 0.4 acceptance criteria (not tested yet)
+
+- [ ] Verify directory tile aggregation and zoom gestures, including deep nested folder names.
+- [ ] Validate 24-bookmark persistence and safe behavior if a SAF grant is revoked.
+- [ ] Check extension grouping, unknown modification dates and empty/hidden filtering with real providers.
+- [ ] Inspect JSON exported inventory for correctness and user privacy.
+- [ ] Test hardware keyboard shortcuts with focused and unfocused input fields, and all display modes.
+- [ ] Confirm every newly added translated string and layout (EN/PL/DE/ES/FR).
+- [ ] Complete Android compile, Lint, unit/instrumentation tests, device checks and Play Billing testing.
