@@ -15,10 +15,8 @@ A fast, private visual storage explorer inspired by treemaps. The phone UI follo
 - All analysis is **on-device**, with no internet permission, telemetry or account.
 
 ## Development
-Open this repository in Android Studio with JDK 17 and Android SDK 35.
-Gradle 8.11.1 / AGP 8.9.2 / Kotlin 2.1.20. The Gradle wrapper properties are provided; generate the wrapper scripts and wrapper JAR with a local Gradle installation if they are not present:
-`gradle wrapper --gradle-version 8.11.1`
-Then `./gradlew :app:assembleDebug`.
+Open this repository in Android Studio with JDK 17 and Android SDK 36.
+Gradle 8.11.1 / AGP 8.9.2 / Kotlin 2.1.20. Run `./gradlew :app:assembleDebug` on Linux/macOS, or `gradlew.bat :app:assembleDebug` on Windows. The Gradle wrapper scripts and JAR are included.
 
 ## Important Android limitation
 On Android 11+, SAF cannot select the storage root, the Downloads folder root, or Android/data and Android/obb. The storage bar shows **device-wide** free/used space; the treemap shows **only files in the user-selected folder**. Do not confuse these statistics. The app intentionally does **not** request `MANAGE_EXTERNAL_STORAGE` or delete files. A later, justified file-management edition can evaluate Play policy and alternative MediaStore access before promising full-device scan.
