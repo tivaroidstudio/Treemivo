@@ -27,9 +27,12 @@ class StorageViewModel(app: Application) : AndroidViewModel(app) {
     private val safScanner = StorageScanner(app.contentResolver)
     private val mediaScanner = MediaScanner(app)
     private val historyStore = ScanHistory(app)
+    private val filterStore = FilterPresets(app)
+    private val photoAnalyzer = PhotoSimilarityAnalyzer(app.contentResolver)
     val billing = ProBilling(app)
     private var scanJob: Job? = null
     private var duplicateJob: Job? = null
+    private var photoJob: Job? = null
     private var scanGeneration: Long = 0L
 
     var treeUris by mutableStateOf(loadFolderUris())
@@ -44,6 +47,14 @@ class StorageViewModel(app: Application) : AndroidViewModel(app) {
     var report by mutableStateOf<StorageReport?>(null)
         private set
     var history by mutableStateOf(historyStore.entries())
+        private set
+    var savedFilters by mutableStateOf(filterStore.load())
+        private set
+    var similarGroups by mutableStateOf<List<SimilarPhotoGroup>>(emptyList())
+        private set
+    var similarBusy by mutableStateOf(false)
+        private set
+    var similarProgress by mutableStateOf(0)
         private set
     var duplicates by mutableStateOf<List<DuplicateGroup>>(emptyList())
         private set
@@ -155,6 +166,9 @@ class StorageViewModel(app: Application) : AndroidViewModel(app) {
         if (origin == ScanOrigin.MEDIA && !hasMediaAccess()) return
         scanJob?.cancel()
         duplicateJob?.cancel()
+        photoJob?.cancel()
+        similarGroups = emptyList()
+        similarBusy = false
         scanGeneration++
         val generation = scanGeneration
         duplicates = emptyList()
@@ -218,6 +232,59 @@ class StorageViewModel(app: Application) : AndroidViewModel(app) {
         scanGeneration++
         scanJob?.cancel()
         busy = false
+    }
+
+    fun saveFilter(preset: SavedFilter) {
+        if (!billing.isPro) return
+        filterStore.save(preset)
+        savedFilters = filterStore.load()
+    }
+
+    fun removeFilter(name: String) {
+        if (!billing.isPro) return
+        filterStore.remove(name)
+        savedFilters = filterStore.load()
+    }
+
+    fun analyzeSimilarPhotos() {
+        if (!billing.isPro || similarBusy) return
+        val snapshot = report ?: return
+        similarBusy = true
+        similarProgress = 0
+        photoJob = viewModelScope.launch {
+            try {
+                similarGroups = withContext(Dispatchers.IO) {
+                    photoAnalyzer.analyze(snapshot.files) { done, _ ->
+                        similarProgress = done
+                    }
+                }
+            } catch (cancel: CancellationException) {
+                throw cancel
+            } catch (e: Exception) {
+                errorMessage = e.localizedMessage ?: e.javaClass.simpleName
+            } finally {
+                similarBusy = false
+            }
+        }
+    }
+
+    fun cancelSimilarPhotos() {
+        photoJob?.cancel()
+        similarBusy = false
+    }
+
+    fun exportPdf(destination: Uri) {
+        if (!billing.isPro) return
+        val snapshot = report ?: return
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                StoragePdfReport.write(context, destination, snapshot)
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    errorMessage = e.localizedMessage ?: e.javaClass.simpleName
+                }
+            }
+        }
     }
 
     fun clearHistory() {
@@ -301,6 +368,7 @@ class StorageViewModel(app: Application) : AndroidViewModel(app) {
     override fun onCleared() {
         scanJob?.cancel()
         duplicateJob?.cancel()
+        photoJob?.cancel()
         billing.close()
         super.onCleared()
     }
