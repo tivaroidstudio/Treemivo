@@ -113,4 +113,7 @@
     <string name="history_chart_label">Speicherverlauf (gewählte Quelle)</string>
     <string name="zoom_hint">Zum Zoomen zusammenziehen, zum Verschieben ziehen, Doppeltippen setzt zurück.</string>
     <string name="filter_saved_hint">Gespeicherte Filter erfordern Pro.</string>
+    <string name="inspect_zip">ZIP-Inhalt prüfen (Pro)</string>
+    <string name="zip_unavailable">ZIP-Metadaten nicht lesbar oder Archiv über 32 MB.</string>
+    <string name="zip_metadata_warning">Nur Vorschau. Größen stammen aus Archivmetadaten, nicht aus freigegebenem Speicher.</string>
 </resources>
