@@ -178,4 +178,9 @@
     <string name="search_help_title">Advanced search</string>
     <string name="search_help_description">Combine terms like type:video, ext:zip, size&gt;100MB, path:Download, after:2026-01-01. Put phrases in quotes; prefix a term with - to exclude it.</string>
     <string name="search_invalid">Skipped search terms</string>
+    <string name="changed_files_title">Changed large files</string>
+    <string name="changed_files_scope">Size changes for matching items in the top-200 tracked sample of the same authorized source. Other files may not be shown.</string>
+    <string name="changed_files_none">No changed tracked files found in the comparable scans.</string>
+    <string name="changed_files_less">Show fewer</string>
+    <string name="changed_files_more">Show more</string>
 </resources>
