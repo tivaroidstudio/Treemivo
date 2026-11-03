@@ -24,6 +24,19 @@ class MediaScanner(private val context: Context) {
                     permitted("android.permission.READ_MEDIA_VISUAL_USER_SELECTED"))
         else permitted(Manifest.permission.READ_EXTERNAL_STORAGE)
 
+    /** Names only, no media content. Used to avoid comparing different permission scopes. */
+    fun grantedPermissionNames(): List<String> =
+        if (Build.VERSION.SDK_INT >= 33) {
+            listOf(
+                Manifest.permission.READ_MEDIA_IMAGES,
+                Manifest.permission.READ_MEDIA_VIDEO,
+                Manifest.permission.READ_MEDIA_AUDIO,
+                "android.permission.READ_MEDIA_VISUAL_USER_SELECTED"
+            ).filter(::permitted)
+        } else {
+            listOf(Manifest.permission.READ_EXTERNAL_STORAGE).filter(::permitted)
+        }
+
     private fun partialVisualAccess(): Boolean =
         Build.VERSION.SDK_INT >= 34 &&
             permitted("android.permission.READ_MEDIA_VISUAL_USER_SELECTED") &&
