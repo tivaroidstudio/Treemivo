@@ -34,3 +34,13 @@ These checks are not automatically satisfied by a successful code commit.
 - Provider may return unknown file size, zero, inaccessible URI or refuse deletion.
 - Media trash is recoverable through a compatible media manager; SAF direct deletion may be permanent.
 - No automatic deletion, bulk destructive actions, or on-device root file access.
+
+
+## 0.3 additions requiring hands-on verification
+- [ ] Validate Zoom/pan hit-testing and double-tap reset in different orientations and external display window sizes.
+- [ ] Verify Smart Cleanup candidates, individual previews, 500-item media trash cap, system cancel/error paths and file restoration.
+- [ ] Stress-test visual photo similarity on varied lighting, blank photos, rotations and screenshots; assess false positives.
+- [ ] Inspect ZIPs with malicious paths, compression bombs and broken central directories; no data should be extracted.
+- [ ] Verify locale behavior and layout of new dialogs, charts, filter presets and PDF export.
+- [ ] Test snapshot HMAC comparisons across app relaunches and after clearing scan history.
+- [ ] Validate Pro billing product in Google Play internal testing and verify entitlements securely before public paid launch.
