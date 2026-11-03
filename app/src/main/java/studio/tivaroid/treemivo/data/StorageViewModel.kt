@@ -122,7 +122,11 @@ class StorageViewModel(app: Application) : AndroidViewModel(app) {
                 uri, Intent.FLAG_GRANT_READ_URI_PERMISSION
             )
         }
-        // Do not release a write grant from another folder URI.
+        runCatching {
+            context.contentResolver.releasePersistableUriPermission(
+                uri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            )
+        }
         if (origin == ScanOrigin.FOLDERS) {
             if (treeUris.isEmpty()) {
                 scanJob?.cancel()
@@ -165,10 +169,14 @@ class StorageViewModel(app: Application) : AndroidViewModel(app) {
                     if (currentMode == ScanOrigin.MEDIA) {
                         mediaScanner.scan { if (generation == scanGeneration) progressFiles = it }
                     } else {
-                        val parts = currentTrees.mapIndexed { index, uri ->
-                            safScanner.scan(uri) {
-                                if (generation == scanGeneration) progressFiles = index * 100_000 + it
+                        var completedCount = 0
+                        val parts = currentTrees.map { uri ->
+                            val offset = completedCount
+                            val part = safScanner.scan(uri) {
+                                if (generation == scanGeneration) progressFiles = offset + it
                             }
+                            completedCount += part.files.size + part.folders.size
+                            part
                         }
                         if (parts.size == 1) {
                             parts.single()

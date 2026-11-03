@@ -739,7 +739,7 @@ private fun ContentForSection(
                         Column(Modifier.fillMaxWidth().padding(14.dp)) {
                             Text(DateFormat.getDateTimeInstance().format(Date(snap.time)),
                                 fontWeight = FontWeight.SemiBold)
-                            Text(snap.source + " • " + snap.count + " " +
+                            Text(stringResource(if (snap.source == ScanOrigin.MEDIA.name) R.string.scan_media else R.string.saved_folders) + " • " + snap.count + " " +
                                 stringResource(R.string.files_count).lowercase())
                             Text(formatBytes(snap.bytes), color = TreemivoAccent)
                             if (vm.billing.isPro) {
