@@ -55,6 +55,8 @@ class StorageViewModel(app: Application) : AndroidViewModel(app) {
         private set
     var checkingDuplicates by mutableStateOf(false)
         private set
+    var duplicatesProgress by mutableStateOf(0)
+        private set
     var errorMessage by mutableStateOf<String?>(null)
         private set
 
@@ -227,10 +229,11 @@ class StorageViewModel(app: Application) : AndroidViewModel(app) {
         val snapshot = report ?: return
         if (checkingDuplicates || busy) return
         checkingDuplicates = true
+        duplicatesProgress = 0
         duplicateJob = viewModelScope.launch {
             try {
                 duplicates = withContext(Dispatchers.IO) {
-                    safScanner.findExactDuplicates(snapshot.files)
+                    safScanner.findExactDuplicates(snapshot.files) { duplicatesProgress = it }
                 }
                 duplicatesChecked = true
             } catch (cancel: CancellationException) {
@@ -241,6 +244,12 @@ class StorageViewModel(app: Application) : AndroidViewModel(app) {
                 checkingDuplicates = false
             }
         }
+    }
+
+    fun cancelDuplicateCheck() {
+        duplicateJob?.cancel()
+        checkingDuplicates = false
+        duplicatesProgress = 0
     }
 
     /** SAF deletion is intentionally irreversible: this method must follow a confirmation dialog. */

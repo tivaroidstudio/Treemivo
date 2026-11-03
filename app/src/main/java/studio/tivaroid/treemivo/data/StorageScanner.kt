@@ -111,21 +111,29 @@ class StorageScanner(private val resolver: ContentResolver) {
      * Exact duplicate check. Equal sizes are only candidates: SHA-256 must also match.
      * This runs only at the user's request because reading large files can take time.
      */
-    fun findExactDuplicates(files: List<FileRecord>): List<DuplicateGroup> {
+    suspend fun findExactDuplicates(
+        files: List<FileRecord>,
+        onProgress: (Int) -> Unit = {}
+    ): List<DuplicateGroup> {
         val candidates = files.filter { it.sizeBytes > 0 }
             .groupBy { it.sizeBytes }
             .values.filter { it.size > 1 }.flatten()
         val hashes = linkedMapOf<Pair<Long, String>, MutableList<FileRecord>>()
-        for (file in candidates) {
+        for ((index, file) in candidates.withIndex()) {
+            if (index % 8 == 0) {
+                currentCoroutineContext().ensureActive()
+                onProgress(index)
+            }
             val digest = hash(file.uri) ?: continue
             hashes.getOrPut(file.sizeBytes to digest) { mutableListOf() }.add(file)
         }
+        onProgress(candidates.size)
         return hashes.values.filter { it.size > 1 }
             .map { DuplicateGroup(it.toList()) }
             .sortedByDescending { it.reclaimableBytes }
     }
 
-    private fun hash(uri: Uri): String? {
+    private suspend fun hash(uri: Uri): String? {
         return try {
         val messageDigest = MessageDigest.getInstance("SHA-256")
         val stream = resolver.openInputStream(uri) ?: return null
@@ -135,9 +143,12 @@ class StorageScanner(private val resolver: ContentResolver) {
                 val n = input.read(buffer)
                 if (n < 0) break
                 if (n > 0) messageDigest.update(buffer, 0, n)
+                currentCoroutineContext().ensureActive()
             }
         }
         messageDigest.digest().joinToString("") { "%02x".format(it) }
+    } catch (cancel: kotlinx.coroutines.CancellationException) {
+        throw cancel
     } catch (_: Exception) {
         null // Unreadable documents cannot be claimed as confirmed duplicates.
         }
