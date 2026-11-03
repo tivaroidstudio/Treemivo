@@ -142,4 +142,6 @@
     <string name="modified_date">Modificado</string>
     <string name="copy_path">Copiar ruta</string>
     <string name="share_file">Compartir archivo</string>
+    <string name="filter_empty_only">Solo archivos vacíos</string>
+    <string name="filter_hidden_only">Solo archivos ocultos</string>
 </resources>
