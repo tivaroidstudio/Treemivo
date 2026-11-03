@@ -24,3 +24,8 @@ With a deliberate user action, Treemivo may load bounded photo thumbnails to cal
 ### Growth trends and ignored cleanup suggestions (development)
 
 The app locally stores aggregate bytes by file type and a pseudonymous, keyed fingerprint of granted scan sources to avoid comparing unrelated or incomplete scans. It does not store raw scanned folder URIs in scan history. Ignore decisions for Smart Cleanup are stored as keyed digests of document URIs plus size and modification metadata; raw file paths are not persisted for these ignore choices. These values are not uploaded. Users can clear scan history or restore ignored cleanup suggestions from within the app. Different source permissions may make earlier scan snapshots incomparable.
+
+
+### Advanced search, collections and tracked files (development)
+
+Advanced searches and Smart Collections operate on local metadata of files already available to Treemivo. Search expressions stored intentionally as Pro filter presets may contain user-entered filenames and path terms; these are kept only in private app preferences. The history feature also saves keyed, truncated HMAC identifiers and size measurements for a bounded sample of 200 large files in order to identify size changes across comparable scans. No raw filenames, file paths, file contents or complete content URIs are stored in this history index, and the app does not upload this data. Users may clear scan history at any time.
