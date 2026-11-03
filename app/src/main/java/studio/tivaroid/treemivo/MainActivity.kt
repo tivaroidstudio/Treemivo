@@ -440,6 +440,12 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
                         extensionFilter = preset.extension
                         search = preset.searchQuery
                     })
+                    if (section == Section.MAP && vm.report != null) {
+                        SearchBox(
+                            search, { search = it },
+                            Modifier.padding(horizontal = 16.dp).focusRequester(searchFocus)
+                        )
+                    }
                     SelectedFolderCard(
                         vm.report, vm.busy, folderPath, onChooseFolder, vm::refresh,
                         { folderPath = "" }, Modifier.padding(horizontal = 16.dp)
@@ -1031,6 +1037,9 @@ private fun ContentForSection(
                 verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 item { Text(stringResource(R.string.scan_history), fontWeight = FontWeight.SemiBold) }
                 item { StorageGrowthPanel(vm.latestGrowth(), vm.billing.isPro) }
+                if (vm.billing.isPro && vm.report != null) {
+                    item { ChangedFilesPanel(vm) }
+                }
                 val comparable = vm.comparableSnapshots()
                     .take(if (vm.billing.isPro) 30 else 3)
                 if (comparable.isNotEmpty()) {
