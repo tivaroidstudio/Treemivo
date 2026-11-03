@@ -114,7 +114,8 @@ class StorageScanner(private val resolver: ContentResolver) {
             .sortedByDescending { it.reclaimableBytes }
     }
 
-    private fun hash(uri: Uri): String? = try {
+    private fun hash(uri: Uri): String? {
+        return try {
         val messageDigest = MessageDigest.getInstance("SHA-256")
         val stream = resolver.openInputStream(uri) ?: return null
         stream.use { input ->
@@ -128,5 +129,6 @@ class StorageScanner(private val resolver: ContentResolver) {
         messageDigest.digest().joinToString("") { "%02x".format(it) }
     } catch (_: Exception) {
         null // Unreadable documents cannot be claimed as confirmed duplicates.
+        }
     }
 }
