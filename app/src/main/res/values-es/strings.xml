@@ -113,4 +113,7 @@
     <string name="history_chart_label">Evolución del almacenamiento (fuente seleccionada)</string>
     <string name="zoom_hint">Pellizca para ampliar, arrastra para mover, toca dos veces para reiniciar.</string>
     <string name="filter_saved_hint">Los filtros guardados requieren Pro.</string>
+    <string name="inspect_zip">Examinar ZIP (Pro)</string>
+    <string name="zip_unavailable">No se pueden leer los datos del ZIP o supera 32 MB.</string>
+    <string name="zip_metadata_warning">Solo vista previa. Los tamaños son metadatos del archivo, no espacio liberado.</string>
 </resources>
