@@ -13,10 +13,11 @@ data class SavedFilter(
     val sort: FileSort,
     val onlyEmpty: Boolean = false,
     val onlyHidden: Boolean = false,
-    val extension: String? = null
+    val extension: String? = null,
+    val searchQuery: String = ""
 )
 
-/** Saved presets contain preferences only, never file names or file data. */
+/** Saved presets may include user-entered query text, stored privately on device. */
 class FilterPresets(context: Context) {
     private val prefs = context.getSharedPreferences("treemivo_filters", Context.MODE_PRIVATE)
 
@@ -34,7 +35,8 @@ class FilterPresets(context: Context) {
                 sort = FileSort.valueOf(item.getString("sort")),
                 onlyEmpty = item.optBoolean("emptyOnly", false),
                 onlyHidden = item.optBoolean("hiddenOnly", false),
-                extension = item.optString("extension").takeIf { it.isNotBlank() }
+                extension = item.optString("extension").takeIf { it.isNotBlank() },
+                searchQuery = item.optString("searchQuery", "")
             )
         }
     }.getOrDefault(emptyList())
@@ -54,6 +56,7 @@ class FilterPresets(context: Context) {
                 put("emptyOnly", item.onlyEmpty)
                 put("hiddenOnly", item.onlyHidden)
                 put("extension", item.extension ?: "")
+                put("searchQuery", item.searchQuery.take(300))
             })
         }
         prefs.edit().putString("presets", arr.toString()).apply()
@@ -68,6 +71,7 @@ class FilterPresets(context: Context) {
                 put("kind", it.kind?.name ?: ""); put("recent", it.recentOnly)
                 put("sort", it.sort.name); put("emptyOnly", it.onlyEmpty)
                 put("hiddenOnly", it.onlyHidden); put("extension", it.extension ?: "")
+                put("searchQuery", it.searchQuery.take(300))
             })
         }
         prefs.edit().putString("presets", arr.toString()).apply()
