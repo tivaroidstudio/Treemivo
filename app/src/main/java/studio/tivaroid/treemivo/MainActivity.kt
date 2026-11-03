@@ -250,13 +250,21 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
                             fileSort = preset.sort
                         })
                         SelectedFolderCard(vm.report, vm.busy, folderPath, onChooseFolder, vm::refresh, { folderPath = "" })
+                        if (vm.report != null) {
+                            FolderQuickLinks(
+                                folderPath, vm.currentBookmarks(), vm.isBookmarked(folderPath),
+                                onNavigate = onFolder, onToggleBookmark = vm::toggleBookmark
+                            )
+                        }
                         if (vm.report == null) {
                             SelectFolderMessage(vm.busy, onChooseFolder, onScanMedia)
                         } else {
                             MapCard(
                                 filteredFiles,
+                                directory = folderPath,
                                 height = 500.dp,
-                                onSelect = { selectedFile = it }
+                                onSelect = { selectedFile = it },
+                                onOpenFolder = onFolder
                             )
                             if (vm.report?.partial == true) {
                                 Text(stringResource(R.string.scan_partial), color = TreemivoMuted)
@@ -326,6 +334,12 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
                         { folderPath = "" }, Modifier.padding(horizontal = 16.dp)
                     )
                     Spacer(Modifier.height(10.dp))
+                    if (vm.report != null) {
+                        FolderQuickLinks(
+                            folderPath, vm.currentBookmarks(), vm.isBookmarked(folderPath),
+                            onNavigate = onFolder, onToggleBookmark = vm::toggleBookmark
+                        )
+                    }
                     if (vm.report == null && section != Section.HISTORY) {
                         Box(Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {
                             SelectFolderMessage(vm.busy, onChooseFolder, onScanMedia)
@@ -337,7 +351,11 @@ private fun TreemivoApp(vm: StorageViewModel = viewModel()) {
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             item {
-                                MapCard(filteredFiles, height = 390.dp, onSelect = { selectedFile = it })
+                                MapCard(
+                                    filteredFiles, directory = folderPath, height = 390.dp,
+                                    onSelect = { selectedFile = it },
+                                    onOpenFolder = onFolder
+                                )
                             }
                             if (selectedFile != null) {
                                 item {
@@ -643,30 +661,70 @@ private fun SelectFolderMessage(scanning: Boolean, onChoose: () -> Unit, onMedia
 }
 
 @Composable
-private fun MapCard(files: List<FileRecord>, height: Dp, onSelect: (FileRecord) -> Unit) {
-    Surface(shape = RoundedCornerShape(20.dp), color = TreemivoPanel, modifier = Modifier.fillMaxWidth()) {
+private fun MapCard(
+    files: List<FileRecord>,
+    directory: String,
+    height: Dp,
+    onSelect: (FileRecord) -> Unit,
+    onOpenFolder: (String) -> Unit
+) {
+    var folderMode by rememberSaveable { mutableStateOf(true) }
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = TreemivoPanel,
+        modifier = Modifier.fillMaxWidth()
+    ) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Outlined.GridView, null, tint = TreemivoAccent)
                 Spacer(Modifier.width(8.dp))
                 Text(stringResource(R.string.map), fontWeight = FontWeight.SemiBold, fontSize = 17.sp)
                 Spacer(Modifier.weight(1f))
-                Text(files.size.toString() + " " + stringResource(R.string.files_count).lowercase(), color = TreemivoMuted, fontSize = 12.sp)
+                Text(files.size.toString() + " " + stringResource(R.string.files_count).lowercase(),
+                    color = TreemivoMuted, fontSize = 12.sp)
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(
+                    selected = folderMode,
+                    onClick = { folderMode = true },
+                    label = { Text(stringResource(R.string.map_folders)) }
+                )
+                FilterChip(
+                    selected = !folderMode,
+                    onClick = { folderMode = false },
+                    label = { Text(stringResource(R.string.map_files)) }
+                )
             }
             Surface(
                 shape = RoundedCornerShape(14.dp),
                 color = TreemivoBackground,
                 modifier = Modifier.fillMaxWidth().height(height)
             ) {
-                if (files.any { it.sizeBytes > 0 }) TreemapView(files, Modifier.fillMaxSize(), onSelect)
-                else Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(stringResource(R.string.no_files), color = TreemivoMuted)
+                if (files.any { it.sizeBytes > 0 }) {
+                    if (folderMode) {
+                        DirectoryTreemapView(
+                            files = files, directory = directory,
+                            modifier = Modifier.fillMaxSize(),
+                            onOpenFolder = onOpenFolder,
+                            onOpenFile = onSelect
+                        )
+                    } else {
+                        TreemapView(files, Modifier.fillMaxSize(), onSelect)
+                    }
+                } else {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(stringResource(R.string.no_files), color = TreemivoMuted)
+                    }
                 }
             }
-            Text(stringResource(R.string.zoom_hint), color = TreemivoMuted, fontSize = 12.sp)
-            if (files.size > 260) {
-                Text(stringResource(R.string.treemap_limit), color = TreemivoMuted, fontSize = 12.sp)
-            }
+            Text(
+                stringResource(
+                    if (folderMode) R.string.map_folder_hint else R.string.zoom_hint
+                ), color = TreemivoMuted, fontSize = 12.sp
+            )
+            if (files.size > 260) Text(
+                stringResource(R.string.treemap_limit), color = TreemivoMuted, fontSize = 12.sp
+            )
         }
     }
 }
