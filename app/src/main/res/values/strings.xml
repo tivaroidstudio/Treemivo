@@ -158,4 +158,24 @@
     <string name="cleanup_ignore">Ignore</string>
     <string name="pane_resize">Resize detail panel</string>
     <string name="pane_details">Inspector</string>
+    <string name="collections_title">Smart Collections</string>
+    <string name="collections_scope">Groups are based on accessible, indexed file metadata only.</string>
+    <string name="collections_back">Back</string>
+    <string name="collections_empty">No matching collections found.</string>
+    <string name="collections_preview_limit">Showing at most 300 files from this group.</string>
+    <string name="collections_not_duplicates">Filename families are suggestions for browsing, not confirmed duplicates.</string>
+    <string name="collections_folders">Folders</string>
+    <string name="collections_extensions">Extensions</string>
+    <string name="collections_years">Years</string>
+    <string name="collections_name_families">Name families</string>
+    <string name="collections_file_sizes">File sizes</string>
+    <string name="collections_unknown_size">Unknown size</string>
+    <string name="collections_empty_size">Empty files</string>
+    <string name="collections_under_10mb">Under 10 MB</string>
+    <string name="collections_10_100mb">10–100 MB</string>
+    <string name="collections_100mb_1gb">100 MB–1 GB</string>
+    <string name="collections_over_1gb">1 GB and more</string>
+    <string name="search_help_title">Advanced search</string>
+    <string name="search_help_description">Combine terms like type:video, ext:zip, size&gt;100MB, path:Download, after:2026-01-01. Put phrases in quotes; prefix a term with - to exclude it.</string>
+    <string name="search_invalid">Skipped search terms</string>
 </resources>
