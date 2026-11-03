@@ -34,7 +34,7 @@ class FilterPresets(context: Context) {
                 sort = FileSort.valueOf(item.getString("sort")),
                 onlyEmpty = item.optBoolean("emptyOnly", false),
                 onlyHidden = item.optBoolean("hiddenOnly", false),
-                extension = item.optString("extension").ifBlank { null }
+                extension = item.optString("extension").takeIf { it.isNotBlank() }
             )
         }
     }.getOrDefault(emptyList())
